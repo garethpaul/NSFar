@@ -40,7 +40,6 @@ Canonical security policy and reporting:
 
 - [`SECURITY.md`](SECURITY.md)
 
-
 Sparse repositories are easy to misinterpret. Do not treat the contents as an
 installable tool until a maintainer has documented the intended behavior and
 supported use.
