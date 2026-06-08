@@ -46,3 +46,6 @@ supported use.
 - Large generated replacements without provenance
 - Hidden automation or telemetry
 - Unscoped rewrites before the project purpose is documented
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
