@@ -1,5 +1,8 @@
 ## NSFar Vision
 
+This document explains the current state and direction of the project.
+Project overview and developer docs: [`README.md`](README.md)
+
 NSFar is a minimal legacy repository with a small checked-in data artifact and
 no active application surface documented in the README.
 
