@@ -2,12 +2,14 @@
 """Static baseline checks for the sparse NSFar archive."""
 
 from pathlib import Path
+import hashlib
 import sys
 import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAN = "docs/plans/2026-06-08-nsfar-artifact-baseline.md"
+EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
     ".gitignore",
     "CHANGES.md",
@@ -32,7 +34,11 @@ def main():
         if not (ROOT / path).is_file():
             failures.append(f"required file missing: {path}")
 
-    lines = read("gitfiti").splitlines()
+    artifact_bytes = (ROOT / "gitfiti").read_bytes()
+    if hashlib.sha256(artifact_bytes).hexdigest() != EXPECTED_SHA256:
+        failures.append("gitfiti artifact checksum changed without a baseline update")
+
+    lines = artifact_bytes.decode("ascii", errors="replace").splitlines()
     if len(lines) != 2889:
         failures.append("gitfiti artifact must stay at 2889 lines")
     invalid = [line for line in lines if not line.isdigit() or not 0 <= int(line) <= 17]
@@ -42,7 +48,7 @@ def main():
         failures.append("gitfiti artifact must preserve the observed 0 through 17 range")
 
     docs = "\n".join(read(path) for path in ["README.md", "SECURITY.md", "VISION.md"])
-    for phrase in ["make check", "gitfiti", "numeric artifact", "2,889"]:
+    for phrase in ["make check", "gitfiti", "numeric artifact", "2,889", EXPECTED_SHA256]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
 

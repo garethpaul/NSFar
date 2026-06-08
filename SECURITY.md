@@ -28,7 +28,9 @@ Helpful reports include:
 - The repository scan did not identify production authentication, payment, or secret-management code. Treat the project as public sample code unless future changes add sensitive surfaces.
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 - The checked-in `gitfiti` file is treated as a preserved 2,889-line numeric
-  artifact. Run `make check` before changing it or related archive metadata.
+  artifact with SHA-256
+  `89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4`.
+  Run `make check` before changing it or related archive metadata.
 
 
 ## Dependency and Supply Chain Security

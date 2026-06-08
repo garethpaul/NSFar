@@ -15,7 +15,8 @@ The goal is to preserve the repository without inventing behavior that is not
 present in the codebase.
 
 Current baseline: `make check` verifies that `gitfiti` remains a 2,889-line
-numeric artifact with values from 0 through 17.
+numeric artifact with values from 0 through 17 and SHA-256
+`89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4`.
 
 The current focus is:
 

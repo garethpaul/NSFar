@@ -47,6 +47,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - There is no installable runtime in the current repository.
 - Treat `gitfiti` as a preserved numeric artifact until provenance or
   regeneration notes are added.
+- Current artifact checksum: SHA-256
+  `89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4`.
 
 ## Testing and Verification
 
