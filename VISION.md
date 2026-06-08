@@ -14,6 +14,9 @@ should be kept.
 The goal is to preserve the repository without inventing behavior that is not
 present in the codebase.
 
+Current baseline: `make check` verifies that `gitfiti` remains a 2,889-line
+numeric artifact with values from 0 through 17.
+
 The current focus is:
 
 Priority:
@@ -22,6 +25,7 @@ Priority:
 - Document provenance before making functional changes
 - Avoid adding generated churn without explaining the source
 - Preserve the security-reporting path
+- Keep artifact-shape verification available through `make check`
 
 Next priorities:
 

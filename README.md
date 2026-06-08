@@ -11,16 +11,21 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 
 ## Repository Contents
 
+- `.gitignore` - local environment/log/temp ignores
+- `CHANGES.md` - baseline change log
+- `Makefile` - local static verification entry point
 - `README.md` - project overview and local usage notes
 - `SECURITY.md` - security reporting and disclosure guidance
 - `VISION.md` - project direction and maintenance guardrails
+- `gitfiti` - preserved 2,889-line numeric artifact with values from 0 through 17
+- `scripts/check-baseline.py` - archive/artifact baseline checks
 
 Additional scan context:
 
 - Source directories: no top-level source directories detected
 - Dependency and build manifests: none detected
-- Entry points or build surfaces: none detected
-- Test-looking files: no obvious test files detected
+- Entry points or build surfaces: `gitfiti`
+- Test-looking files: `scripts/check-baseline.py`
 
 ## Getting Started
 
@@ -39,11 +44,14 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Running or Using the Project
 
-- No single runtime entry point was identified. Start by reading the source files and manifests listed above.
+- There is no installable runtime in the current repository.
+- Treat `gitfiti` as a preserved numeric artifact until provenance or
+  regeneration notes are added.
 
 ## Testing and Verification
 
-- No dedicated automated test command was identified from the checked-in files. Verify changes by running the relevant build or manually exercising the sample.
+- `make check`
+- `python3 scripts/check-baseline.py`
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -54,9 +62,12 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Security and Privacy Notes
 
 - The scan did not identify production authentication, payment, or secret-management code. Treat future additions in those areas as security-sensitive.
+- Do not rewrite the `gitfiti` numeric artifact without a reproducible source or
+  documented provenance.
 
 ## Maintenance Notes
 
+- Run `make check` before changing the artifact or archive metadata.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 
