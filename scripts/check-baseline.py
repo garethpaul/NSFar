@@ -3,12 +3,15 @@
 
 from pathlib import Path
 import hashlib
+import json
 import sys
 import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAN = "docs/plans/2026-06-08-nsfar-artifact-baseline.md"
+MANIFEST_PLAN = "docs/plans/2026-06-09-artifact-manifest.md"
+MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
     ".gitignore",
@@ -17,8 +20,10 @@ REQUIRED = [
     "README.md",
     "SECURITY.md",
     "VISION.md",
+    MANIFEST,
     "docs/readme-overview.svg",
     PLAN,
+    MANIFEST_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -47,14 +52,36 @@ def main():
     if not {"0", "17"}.issubset(set(lines)):
         failures.append("gitfiti artifact must preserve the observed 0 through 17 range")
 
+    manifest = json.loads(read(MANIFEST))
+    value_counts = {}
+    for line in lines:
+        value_counts[line] = value_counts.get(line, 0) + 1
+    expected_manifest = {
+        "path": "gitfiti",
+        "encoding": "ascii",
+        "format": "newline-delimited integers",
+        "sha256": EXPECTED_SHA256,
+        "bytes": len(artifact_bytes),
+        "lineCount": len(lines),
+        "minValue": min(int(line) for line in lines),
+        "maxValue": max(int(line) for line in lines),
+        "valueCounts": value_counts,
+    }
+    for key, expected in expected_manifest.items():
+        if manifest.get(key) != expected:
+            failures.append(f"artifact manifest {key} must match gitfiti")
+
     docs = "\n".join(read(path) for path in ["README.md", "SECURITY.md", "VISION.md"])
-    for phrase in ["make check", "gitfiti", "numeric artifact", "2,889", EXPECTED_SHA256]:
+    for phrase in ["make check", "gitfiti", "numeric artifact", "2,889", EXPECTED_SHA256, "artifact manifest"]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
 
     plan = read(PLAN)
     if "status: completed" not in plan or "make check" not in plan:
         failures.append("plan must record completed status and verification")
+    manifest_plan = read(MANIFEST_PLAN)
+    if "status: completed" not in manifest_plan or "artifact-manifest.json" not in manifest_plan:
+        failures.append("manifest plan must record completed status and verification")
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:

@@ -5,4 +5,6 @@
 - Documented the checked-in `gitfiti` file as a preserved numeric artifact.
 - Added `make check` static verification for the artifact line count and value
   range plus a SHA-256 checksum guard.
+- Added a checked artifact manifest for path, size, line count, value range,
+  value counts, encoding, format, and checksum metadata.
 - Added local ignore rules for environment files, logs, and temporary output.
