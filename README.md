@@ -49,6 +49,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   regeneration notes are added.
 - `docs/artifact-manifest.json` records the artifact path, byte size, line
   count, value range, value counts, encoding, format, and checksum.
+- The artifact manifest uses schema version 1 so future metadata changes are
+  explicit.
 - Current artifact checksum: SHA-256
   `89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4`.
 

@@ -31,7 +31,7 @@ Helpful reports include:
   artifact with SHA-256
   `89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4`.
   The artifact manifest in `docs/artifact-manifest.json` must stay aligned with
-  the artifact bytes.
+  the artifact bytes and keep its schema version explicit.
   Run `make check` before changing it or related archive metadata.
 
 

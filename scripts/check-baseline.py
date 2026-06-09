@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 PLAN = "docs/plans/2026-06-08-nsfar-artifact-baseline.md"
 MANIFEST_PLAN = "docs/plans/2026-06-09-artifact-manifest.md"
+SCHEMA_PLAN = "docs/plans/2026-06-09-manifest-schema-version.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -24,6 +25,7 @@ REQUIRED = [
     "docs/readme-overview.svg",
     PLAN,
     MANIFEST_PLAN,
+    SCHEMA_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -53,6 +55,9 @@ def main():
         failures.append("gitfiti artifact must preserve the observed 0 through 17 range")
 
     manifest = json.loads(read(MANIFEST))
+    if manifest.get("schemaVersion") != 1:
+        failures.append("artifact manifest schemaVersion must be 1")
+
     value_counts = {}
     for line in lines:
         value_counts[line] = value_counts.get(line, 0) + 1
@@ -72,7 +77,15 @@ def main():
             failures.append(f"artifact manifest {key} must match gitfiti")
 
     docs = "\n".join(read(path) for path in ["README.md", "SECURITY.md", "VISION.md"])
-    for phrase in ["make check", "gitfiti", "numeric artifact", "2,889", EXPECTED_SHA256, "artifact manifest"]:
+    for phrase in [
+        "make check",
+        "gitfiti",
+        "numeric artifact",
+        "2,889",
+        EXPECTED_SHA256,
+        "artifact manifest",
+        "schema version",
+    ]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
 
@@ -82,6 +95,9 @@ def main():
     manifest_plan = read(MANIFEST_PLAN)
     if "status: completed" not in manifest_plan or "artifact-manifest.json" not in manifest_plan:
         failures.append("manifest plan must record completed status and verification")
+    schema_plan = read(SCHEMA_PLAN)
+    if "status: completed" not in schema_plan or "schemaVersion" not in schema_plan:
+        failures.append("schema plan must record completed status and verification")
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:
