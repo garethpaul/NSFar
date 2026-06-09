@@ -13,4 +13,6 @@
 - Added checked non-executable file mode metadata to the artifact manifest.
 - Added `.gitattributes` LF rules for the byte-sensitive artifact and manifest.
 - Added checked distinct values metadata to the artifact manifest.
+- Added `make lint`, `make test`, and `make build` aliases so the standard
+  gate commands run the same SDK-free static baseline as `make check`.
 - Added local ignore rules for environment files, logs, and temporary output.

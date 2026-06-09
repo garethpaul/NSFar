@@ -14,8 +14,9 @@ should be kept.
 The goal is to preserve the repository without inventing behavior that is not
 present in the codebase.
 
-Current baseline: `make check` verifies that `gitfiti` remains a 2,889-line
-numeric artifact with values from 0 through 17 and SHA-256
+Current baseline: `make lint`, `make test`, `make build`, and `make check`
+verify that `gitfiti` remains a 2,889-line numeric artifact with values from 0
+through 17 and SHA-256
 `89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4`.
 The artifact manifest in `docs/artifact-manifest.json` records the same
 preservation metadata in machine-readable form with schema version 1, LF line
@@ -36,6 +37,8 @@ Priority:
 - Keep artifact file mode metadata explicit
 - Keep repository line-ending attributes aligned with byte-sensitive artifacts
 - Keep artifact distinct values explicit in the manifest
+- Keep `make lint`, `make test`, `make build`, and `make check` on the
+  SDK-free static baseline
 
 Next priorities:
 
@@ -53,6 +56,8 @@ Contribution rules:
 - Keep security and ownership metadata current.
 - Preserve the artifact file mode unless provenance justifies a change.
 - Preserve `.gitattributes` LF rules for archive artifacts.
+- Run `make lint`, `make test`, `make build`, and `make check` before changing
+  archive metadata.
 
 ## Security And Responsible Use
 

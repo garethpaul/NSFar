@@ -36,7 +36,8 @@ Helpful reports include:
   distinct values.
   `.gitattributes` pins the artifact and manifest to LF line endings so archive
   bytes do not drift silently across checkouts.
-  Run `make check` before changing it or related archive metadata.
+  Run `make lint`, `make test`, `make build`, and `make check` before changing
+  it or related archive metadata.
 
 
 ## Dependency and Supply Chain Security

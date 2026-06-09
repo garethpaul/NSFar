@@ -17,6 +17,7 @@ LINE_ENDING_PLAN = "docs/plans/2026-06-09-artifact-line-endings.md"
 FILE_MODE_PLAN = "docs/plans/2026-06-09-artifact-file-mode.md"
 GITATTRIBUTES_PLAN = "docs/plans/2026-06-09-artifact-gitattributes.md"
 DISTINCT_VALUES_PLAN = "docs/plans/2026-06-09-manifest-distinct-values.md"
+MAKE_GATE_PLAN = "docs/plans/2026-06-09-make-gate-aliases.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -36,6 +37,7 @@ REQUIRED = [
     FILE_MODE_PLAN,
     GITATTRIBUTES_PLAN,
     DISTINCT_VALUES_PLAN,
+    MAKE_GATE_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -99,6 +101,9 @@ def main():
 
     docs = "\n".join(read(path) for path in ["README.md", "SECURITY.md", "VISION.md"])
     for phrase in [
+        "make lint",
+        "make test",
+        "make build",
         "make check",
         "gitfiti",
         "numeric artifact",
@@ -113,6 +118,17 @@ def main():
     ]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
+
+    makefile = read("Makefile")
+    for phrase in [
+        ".PHONY: build check lint static-check test verify",
+        "check: verify",
+        "verify: static-check",
+        "lint test build: static-check",
+        "PYTHONDONTWRITEBYTECODE=1 $(PYTHON) scripts/check-baseline.py",
+    ]:
+        if phrase not in makefile:
+            failures.append(f"Makefile must include standard gate alias: {phrase}")
 
     plan = read(PLAN)
     if "status: completed" not in plan or "make check" not in plan:
@@ -135,6 +151,10 @@ def main():
     distinct_values_plan = read(DISTINCT_VALUES_PLAN)
     if "status: completed" not in distinct_values_plan or "distinctValues" not in distinct_values_plan:
         failures.append("distinct values plan must record completed status and verification")
+    make_gate_plan_path = ROOT / MAKE_GATE_PLAN
+    make_gate_plan = make_gate_plan_path.read_text(encoding="utf-8") if make_gate_plan_path.exists() else ""
+    if "status: completed" not in make_gate_plan or "make lint" not in make_gate_plan or "make build" not in make_gate_plan:
+        failures.append("make gate alias plan must record completed status and verification")
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:
