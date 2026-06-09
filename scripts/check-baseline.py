@@ -4,6 +4,7 @@
 from pathlib import Path
 import hashlib
 import json
+import stat
 import sys
 import xml.etree.ElementTree as ET
 
@@ -13,6 +14,7 @@ PLAN = "docs/plans/2026-06-08-nsfar-artifact-baseline.md"
 MANIFEST_PLAN = "docs/plans/2026-06-09-artifact-manifest.md"
 SCHEMA_PLAN = "docs/plans/2026-06-09-manifest-schema-version.md"
 LINE_ENDING_PLAN = "docs/plans/2026-06-09-artifact-line-endings.md"
+FILE_MODE_PLAN = "docs/plans/2026-06-09-artifact-file-mode.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -28,6 +30,7 @@ REQUIRED = [
     MANIFEST_PLAN,
     SCHEMA_PLAN,
     LINE_ENDING_PLAN,
+    FILE_MODE_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -43,9 +46,12 @@ def main():
         if not (ROOT / path).is_file():
             failures.append(f"required file missing: {path}")
 
-    artifact_bytes = (ROOT / "gitfiti").read_bytes()
+    artifact_path = ROOT / "gitfiti"
+    artifact_bytes = artifact_path.read_bytes()
     if hashlib.sha256(artifact_bytes).hexdigest() != EXPECTED_SHA256:
         failures.append("gitfiti artifact checksum changed without a baseline update")
+    if stat.S_IMODE(artifact_path.stat().st_mode) != 0o644:
+        failures.append("gitfiti artifact must stay a non-executable 100644 file")
     if b"\r" in artifact_bytes:
         failures.append("gitfiti artifact must use LF line endings")
     if not artifact_bytes.endswith(b"\n"):
@@ -71,6 +77,7 @@ def main():
         "path": "gitfiti",
         "encoding": "ascii",
         "format": "newline-delimited integers",
+        "fileMode": "100644",
         "lineEnding": "LF",
         "trailingNewline": True,
         "sha256": EXPECTED_SHA256,
@@ -93,6 +100,7 @@ def main():
         EXPECTED_SHA256,
         "artifact manifest",
         "schema version",
+        "file mode",
         "line ending",
     ]:
         if phrase.lower() not in docs.lower():
@@ -110,6 +118,9 @@ def main():
     line_ending_plan = read(LINE_ENDING_PLAN)
     if "status: completed" not in line_ending_plan or "lineEnding" not in line_ending_plan:
         failures.append("line ending plan must record completed status and verification")
+    file_mode_plan = read(FILE_MODE_PLAN)
+    if "status: completed" not in file_mode_plan or "fileMode" not in file_mode_plan:
+        failures.append("file mode plan must record completed status and verification")
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:

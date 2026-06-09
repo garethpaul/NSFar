@@ -10,4 +10,5 @@
 - Added a checked schema version to the artifact manifest.
 - Added checked line ending and terminal newline metadata to the artifact
   manifest.
+- Added checked non-executable file mode metadata to the artifact manifest.
 - Added local ignore rules for environment files, logs, and temporary output.

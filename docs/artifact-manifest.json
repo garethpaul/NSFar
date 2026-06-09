@@ -3,6 +3,7 @@
   "path": "gitfiti",
   "encoding": "ascii",
   "format": "newline-delimited integers",
+  "fileMode": "100644",
   "lineEnding": "LF",
   "trailingNewline": true,
   "sha256": "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4",
