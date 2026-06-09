@@ -16,6 +16,7 @@ SCHEMA_PLAN = "docs/plans/2026-06-09-manifest-schema-version.md"
 LINE_ENDING_PLAN = "docs/plans/2026-06-09-artifact-line-endings.md"
 FILE_MODE_PLAN = "docs/plans/2026-06-09-artifact-file-mode.md"
 GITATTRIBUTES_PLAN = "docs/plans/2026-06-09-artifact-gitattributes.md"
+DISTINCT_VALUES_PLAN = "docs/plans/2026-06-09-manifest-distinct-values.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -34,6 +35,7 @@ REQUIRED = [
     LINE_ENDING_PLAN,
     FILE_MODE_PLAN,
     GITATTRIBUTES_PLAN,
+    DISTINCT_VALUES_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -88,6 +90,7 @@ def main():
         "lineCount": len(lines),
         "minValue": min(int(line) for line in lines),
         "maxValue": max(int(line) for line in lines),
+        "distinctValues": sorted({int(line) for line in lines}),
         "valueCounts": value_counts,
     }
     for key, expected in expected_manifest.items():
@@ -106,6 +109,7 @@ def main():
         "file mode",
         "line ending",
         "gitattributes",
+        "distinct values",
     ]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
@@ -128,6 +132,9 @@ def main():
     gitattributes_plan = read(GITATTRIBUTES_PLAN)
     if "status: completed" not in gitattributes_plan or ".gitattributes" not in gitattributes_plan:
         failures.append("gitattributes plan must record completed status and verification")
+    distinct_values_plan = read(DISTINCT_VALUES_PLAN)
+    if "status: completed" not in distinct_values_plan or "distinctValues" not in distinct_values_plan:
+        failures.append("distinct values plan must record completed status and verification")
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:

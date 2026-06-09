@@ -19,7 +19,7 @@ numeric artifact with values from 0 through 17 and SHA-256
 `89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4`.
 The artifact manifest in `docs/artifact-manifest.json` records the same
 preservation metadata in machine-readable form with schema version 1, LF line
-ending metadata, terminal newline state, and file mode.
+ending metadata, terminal newline state, file mode, and distinct values.
 
 The current focus is:
 
@@ -35,6 +35,7 @@ Priority:
 - Keep artifact line ending metadata explicit
 - Keep artifact file mode metadata explicit
 - Keep repository line-ending attributes aligned with byte-sensitive artifacts
+- Keep artifact distinct values explicit in the manifest
 
 Next priorities:
 
