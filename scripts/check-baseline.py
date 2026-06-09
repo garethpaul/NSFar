@@ -15,9 +15,11 @@ MANIFEST_PLAN = "docs/plans/2026-06-09-artifact-manifest.md"
 SCHEMA_PLAN = "docs/plans/2026-06-09-manifest-schema-version.md"
 LINE_ENDING_PLAN = "docs/plans/2026-06-09-artifact-line-endings.md"
 FILE_MODE_PLAN = "docs/plans/2026-06-09-artifact-file-mode.md"
+GITATTRIBUTES_PLAN = "docs/plans/2026-06-09-artifact-gitattributes.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
+    ".gitattributes",
     ".gitignore",
     "CHANGES.md",
     "Makefile",
@@ -31,6 +33,7 @@ REQUIRED = [
     SCHEMA_PLAN,
     LINE_ENDING_PLAN,
     FILE_MODE_PLAN,
+    GITATTRIBUTES_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -102,6 +105,7 @@ def main():
         "schema version",
         "file mode",
         "line ending",
+        "gitattributes",
     ]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
@@ -121,11 +125,22 @@ def main():
     file_mode_plan = read(FILE_MODE_PLAN)
     if "status: completed" not in file_mode_plan or "fileMode" not in file_mode_plan:
         failures.append("file mode plan must record completed status and verification")
+    gitattributes_plan = read(GITATTRIBUTES_PLAN)
+    if "status: completed" not in gitattributes_plan or ".gitattributes" not in gitattributes_plan:
+        failures.append("gitattributes plan must record completed status and verification")
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:
         if expected not in gitignore:
             failures.append(f".gitignore must include {expected}")
+
+    gitattributes = read(".gitattributes")
+    for expected in [
+        "gitfiti text eol=lf",
+        "docs/artifact-manifest.json text eol=lf",
+    ]:
+        if expected not in gitattributes:
+            failures.append(f".gitattributes must include {expected}")
 
     try:
         ET.parse(ROOT / "docs/readme-overview.svg")

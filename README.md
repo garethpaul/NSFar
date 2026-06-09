@@ -53,6 +53,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - The artifact manifest uses schema version 1 so future metadata changes are
   explicit.
 - The artifact is preserved as a non-executable `100644` file mode.
+- `.gitattributes` pins the `gitfiti` artifact and manifest to LF line endings
+  so byte-sensitive archive files do not drift across checkouts.
 - Current artifact checksum: SHA-256
   `89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4`.
 
@@ -76,6 +78,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   archive metadata changes.
 - Keep the artifact file mode non-executable unless provenance explains why it
   should change.
+- Keep `.gitattributes` line-ending rules in place for byte-sensitive archive
+  files.
 
 ## Maintenance Notes
 

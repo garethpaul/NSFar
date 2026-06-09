@@ -34,6 +34,7 @@ Priority:
 - Keep the artifact manifest schema version explicit
 - Keep artifact line ending metadata explicit
 - Keep artifact file mode metadata explicit
+- Keep repository line-ending attributes aligned with byte-sensitive artifacts
 
 Next priorities:
 
@@ -50,6 +51,7 @@ Contribution rules:
 - Explain any generated data updates.
 - Keep security and ownership metadata current.
 - Preserve the artifact file mode unless provenance justifies a change.
+- Preserve `.gitattributes` LF rules for archive artifacts.
 
 ## Security And Responsible Use
 

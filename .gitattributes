@@ -1,0 +1,4 @@
+gitfiti text eol=lf
+docs/artifact-manifest.json text eol=lf
+*.md text eol=lf
+*.py text eol=lf
