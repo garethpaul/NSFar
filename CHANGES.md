@@ -16,3 +16,4 @@
 - Added `make lint`, `make test`, and `make build` aliases so the standard
   gate commands run the same SDK-free static baseline as `make check`.
 - Added local ignore rules for environment files, logs, and temporary output.
+- Added checked first and last value metadata to the artifact manifest.

@@ -9,6 +9,8 @@
   "sha256": "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4",
   "bytes": 6083,
   "lineCount": 2889,
+  "firstValue": 0,
+  "lastValue": 8,
   "minValue": 0,
   "maxValue": 17,
   "distinctValues": [

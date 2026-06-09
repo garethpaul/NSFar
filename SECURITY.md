@@ -33,7 +33,7 @@ Helpful reports include:
   The artifact manifest in `docs/artifact-manifest.json` must stay aligned with
   the artifact bytes and keep its schema version, line ending, and terminal
   newline metadata explicit. It also records the non-executable file mode and
-  distinct values.
+  distinct values plus boundary values.
   `.gitattributes` pins the artifact and manifest to LF line endings so archive
   bytes do not drift silently across checkouts.
   Run `make lint`, `make test`, `make build`, and `make check` before changing

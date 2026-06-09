@@ -18,6 +18,7 @@ FILE_MODE_PLAN = "docs/plans/2026-06-09-artifact-file-mode.md"
 GITATTRIBUTES_PLAN = "docs/plans/2026-06-09-artifact-gitattributes.md"
 DISTINCT_VALUES_PLAN = "docs/plans/2026-06-09-manifest-distinct-values.md"
 MAKE_GATE_PLAN = "docs/plans/2026-06-09-make-gate-aliases.md"
+BOUNDARY_VALUES_PLAN = "docs/plans/2026-06-09-manifest-boundary-values.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -38,6 +39,7 @@ REQUIRED = [
     GITATTRIBUTES_PLAN,
     DISTINCT_VALUES_PLAN,
     MAKE_GATE_PLAN,
+    BOUNDARY_VALUES_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -90,6 +92,8 @@ def main():
         "sha256": EXPECTED_SHA256,
         "bytes": len(artifact_bytes),
         "lineCount": len(lines),
+        "firstValue": int(lines[0]),
+        "lastValue": int(lines[-1]),
         "minValue": min(int(line) for line in lines),
         "maxValue": max(int(line) for line in lines),
         "distinctValues": sorted({int(line) for line in lines}),
@@ -115,6 +119,7 @@ def main():
         "line ending",
         "gitattributes",
         "distinct values",
+        "boundary values",
     ]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
@@ -155,6 +160,9 @@ def main():
     make_gate_plan = make_gate_plan_path.read_text(encoding="utf-8") if make_gate_plan_path.exists() else ""
     if "status: completed" not in make_gate_plan or "make lint" not in make_gate_plan or "make build" not in make_gate_plan:
         failures.append("make gate alias plan must record completed status and verification")
+    boundary_values_plan = read(BOUNDARY_VALUES_PLAN)
+    if "status: completed" not in boundary_values_plan or "firstValue" not in boundary_values_plan or "lastValue" not in boundary_values_plan:
+        failures.append("boundary values plan must record completed status and verification")
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:

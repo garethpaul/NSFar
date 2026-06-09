@@ -20,7 +20,8 @@ through 17 and SHA-256
 `89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4`.
 The artifact manifest in `docs/artifact-manifest.json` records the same
 preservation metadata in machine-readable form with schema version 1, LF line
-ending metadata, terminal newline state, file mode, and distinct values.
+ending metadata, terminal newline state, file mode, distinct values, and
+boundary values.
 
 The current focus is:
 
@@ -37,6 +38,7 @@ Priority:
 - Keep artifact file mode metadata explicit
 - Keep repository line-ending attributes aligned with byte-sensitive artifacts
 - Keep artifact distinct values explicit in the manifest
+- Keep artifact boundary values explicit in the manifest
 - Keep `make lint`, `make test`, `make build`, and `make check` on the
   SDK-free static baseline
 
