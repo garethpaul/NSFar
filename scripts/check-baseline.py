@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLAN = "docs/plans/2026-06-08-nsfar-artifact-baseline.md"
 MANIFEST_PLAN = "docs/plans/2026-06-09-artifact-manifest.md"
 SCHEMA_PLAN = "docs/plans/2026-06-09-manifest-schema-version.md"
+LINE_ENDING_PLAN = "docs/plans/2026-06-09-artifact-line-endings.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -26,6 +27,7 @@ REQUIRED = [
     PLAN,
     MANIFEST_PLAN,
     SCHEMA_PLAN,
+    LINE_ENDING_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -44,6 +46,10 @@ def main():
     artifact_bytes = (ROOT / "gitfiti").read_bytes()
     if hashlib.sha256(artifact_bytes).hexdigest() != EXPECTED_SHA256:
         failures.append("gitfiti artifact checksum changed without a baseline update")
+    if b"\r" in artifact_bytes:
+        failures.append("gitfiti artifact must use LF line endings")
+    if not artifact_bytes.endswith(b"\n"):
+        failures.append("gitfiti artifact must preserve its terminal newline")
 
     lines = artifact_bytes.decode("ascii", errors="replace").splitlines()
     if len(lines) != 2889:
@@ -65,6 +71,8 @@ def main():
         "path": "gitfiti",
         "encoding": "ascii",
         "format": "newline-delimited integers",
+        "lineEnding": "LF",
+        "trailingNewline": True,
         "sha256": EXPECTED_SHA256,
         "bytes": len(artifact_bytes),
         "lineCount": len(lines),
@@ -85,6 +93,7 @@ def main():
         EXPECTED_SHA256,
         "artifact manifest",
         "schema version",
+        "line ending",
     ]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
@@ -98,6 +107,9 @@ def main():
     schema_plan = read(SCHEMA_PLAN)
     if "status: completed" not in schema_plan or "schemaVersion" not in schema_plan:
         failures.append("schema plan must record completed status and verification")
+    line_ending_plan = read(LINE_ENDING_PLAN)
+    if "status: completed" not in line_ending_plan or "lineEnding" not in line_ending_plan:
+        failures.append("line ending plan must record completed status and verification")
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:

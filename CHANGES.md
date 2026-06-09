@@ -8,4 +8,6 @@
 - Added a checked artifact manifest for path, size, line count, value range,
   value counts, encoding, format, and checksum metadata.
 - Added a checked schema version to the artifact manifest.
+- Added checked line ending and terminal newline metadata to the artifact
+  manifest.
 - Added local ignore rules for environment files, logs, and temporary output.

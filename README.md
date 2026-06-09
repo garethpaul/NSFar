@@ -48,7 +48,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - Treat `gitfiti` as a preserved numeric artifact until provenance or
   regeneration notes are added.
 - `docs/artifact-manifest.json` records the artifact path, byte size, line
-  count, value range, value counts, encoding, format, and checksum.
+  count, value range, value counts, encoding, format, line ending, terminal
+  newline state, and checksum.
 - The artifact manifest uses schema version 1 so future metadata changes are
   explicit.
 - Current artifact checksum: SHA-256

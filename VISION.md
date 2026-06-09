@@ -18,7 +18,8 @@ Current baseline: `make check` verifies that `gitfiti` remains a 2,889-line
 numeric artifact with values from 0 through 17 and SHA-256
 `89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4`.
 The artifact manifest in `docs/artifact-manifest.json` records the same
-preservation metadata in machine-readable form with schema version 1.
+preservation metadata in machine-readable form with schema version 1, LF line
+ending metadata, and terminal newline state.
 
 The current focus is:
 
@@ -31,6 +32,7 @@ Priority:
 - Keep artifact-shape verification available through `make check`
 - Keep the artifact manifest synchronized with the preserved file
 - Keep the artifact manifest schema version explicit
+- Keep artifact line ending metadata explicit
 
 Next priorities:
 
