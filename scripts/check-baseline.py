@@ -21,6 +21,7 @@ MAKE_GATE_PLAN = "docs/plans/2026-06-09-make-gate-aliases.md"
 BOUNDARY_VALUES_PLAN = "docs/plans/2026-06-09-manifest-boundary-values.md"
 VALUE_COUNT_TOTAL_PLAN = "docs/plans/2026-06-10-manifest-value-count-total.md"
 HOSTED_VALIDATION_PLAN = "docs/plans/2026-06-10-hosted-artifact-validation.md"
+SEQUENCE_SHAPE_PLAN = "docs/plans/2026-06-10-manifest-sequence-shape.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -45,6 +46,7 @@ REQUIRED = [
     BOUNDARY_VALUES_PLAN,
     VALUE_COUNT_TOTAL_PLAN,
     HOSTED_VALIDATION_PLAN,
+    SEQUENCE_SHAPE_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -95,6 +97,27 @@ def main():
     value_counts = {}
     for line in lines:
         value_counts[line] = value_counts.get(line, 0) + 1
+    values = [int(line) for line in lines]
+    run_lengths = []
+    current_run_length = 0
+    previous_value = None
+    for value in values:
+        if value == 0:
+            if current_run_length:
+                run_lengths.append(current_run_length)
+            current_run_length = 1
+        elif previous_value is None or value != previous_value + 1:
+            failures.append("gitfiti artifact must contain zero-based ascending runs")
+            current_run_length += 1
+        else:
+            current_run_length += 1
+        previous_value = value
+    if current_run_length:
+        run_lengths.append(current_run_length)
+    run_length_counts = {}
+    for length in run_lengths:
+        key = str(length)
+        run_length_counts[key] = run_length_counts.get(key, 0) + 1
     expected_manifest = {
         "path": "gitfiti",
         "encoding": "ascii",
@@ -110,6 +133,11 @@ def main():
         "lastValue": int(lines[-1]),
         "minValue": min(int(line) for line in lines),
         "maxValue": max(int(line) for line in lines),
+        "sequencePattern": "zero-based ascending runs",
+        "runCount": len(run_lengths),
+        "minRunLength": min(run_lengths),
+        "maxRunLength": max(run_lengths),
+        "runLengthCounts": run_length_counts,
         "distinctValues": sorted({int(line) for line in lines}),
         "valueCounts": value_counts,
     }
@@ -135,6 +163,8 @@ def main():
         "distinct values",
         "boundary values",
         "value count total",
+        "sequence shape",
+        "run-length histogram",
     ]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
@@ -185,6 +215,9 @@ def main():
     workflow = read(".github/workflows/check.yml")
     if "status: completed" not in hosted_plan or "make check" not in hosted_plan:
         failures.append("hosted artifact validation plan must record completed status and verification")
+    sequence_shape_plan = read(SEQUENCE_SHAPE_PLAN)
+    if "status: completed" not in sequence_shape_plan or "runLengthCounts" not in sequence_shape_plan:
+        failures.append("sequence shape plan must record completed status and verification")
     for expected in [
         "permissions:\n  contents: read",
         "cancel-in-progress: true",

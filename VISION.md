@@ -22,7 +22,8 @@ The artifact manifest in `docs/artifact-manifest.json` records the same
 preservation metadata in machine-readable form with schema version 1, LF line
 ending metadata, terminal newline state, file mode, distinct values, and
 boundary values. The manifest also records a value count total so the histogram
-can be checked against the artifact line count.
+can be checked against the artifact line count, plus sequence shape and a
+run-length histogram for its zero-based ascending runs.
 
 The current focus is:
 
@@ -41,6 +42,7 @@ Priority:
 - Keep artifact distinct values explicit in the manifest
 - Keep artifact boundary values explicit in the manifest
 - Keep the manifest value count total explicit
+- Keep the artifact sequence shape and run-length histogram explicit
 - Keep `make lint`, `make test`, `make build`, and `make check` on the
   SDK-free static baseline
 - Keep artifact integrity validation pinned and read-only in hosted Linux CI
@@ -62,6 +64,7 @@ Contribution rules:
 - Preserve the artifact file mode unless provenance justifies a change.
 - Preserve `.gitattributes` LF rules for archive artifacts.
 - Preserve the manifest value count total when changing archive metadata.
+- Preserve sequence-shape metadata when changing archive metadata.
 - Run `make lint`, `make test`, `make build`, and `make check` before changing
   archive metadata.
 
