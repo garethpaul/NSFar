@@ -70,6 +70,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make build`
 - `make check`
 - `python3 scripts/check-baseline.py`
+- Pinned `ubuntu-24.04` GitHub Actions runs the same byte-sensitive artifact and
+  manifest integrity checks on Python 3.12.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 

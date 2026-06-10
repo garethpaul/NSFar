@@ -4,7 +4,7 @@
 from pathlib import Path
 import hashlib
 import json
-import stat
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
@@ -20,9 +20,11 @@ DISTINCT_VALUES_PLAN = "docs/plans/2026-06-09-manifest-distinct-values.md"
 MAKE_GATE_PLAN = "docs/plans/2026-06-09-make-gate-aliases.md"
 BOUNDARY_VALUES_PLAN = "docs/plans/2026-06-09-manifest-boundary-values.md"
 VALUE_COUNT_TOTAL_PLAN = "docs/plans/2026-06-10-manifest-value-count-total.md"
+HOSTED_VALIDATION_PLAN = "docs/plans/2026-06-10-hosted-artifact-validation.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
+    ".github/workflows/check.yml",
     ".gitattributes",
     ".gitignore",
     "CHANGES.md",
@@ -42,6 +44,7 @@ REQUIRED = [
     MAKE_GATE_PLAN,
     BOUNDARY_VALUES_PLAN,
     VALUE_COUNT_TOTAL_PLAN,
+    HOSTED_VALIDATION_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -61,7 +64,15 @@ def main():
     artifact_bytes = artifact_path.read_bytes()
     if hashlib.sha256(artifact_bytes).hexdigest() != EXPECTED_SHA256:
         failures.append("gitfiti artifact checksum changed without a baseline update")
-    if stat.S_IMODE(artifact_path.stat().st_mode) != 0o644:
+    indexed_artifact = subprocess.run(
+        ["git", "ls-files", "--stage", "--", "gitfiti"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    indexed_mode = indexed_artifact.stdout.split(maxsplit=1)[0] if indexed_artifact.stdout else ""
+    if indexed_artifact.returncode != 0 or indexed_mode != "100644":
         failures.append("gitfiti artifact must stay a non-executable 100644 file")
     if b"\r" in artifact_bytes:
         failures.append("gitfiti artifact must use LF line endings")
@@ -170,6 +181,22 @@ def main():
     value_count_total_plan = read(VALUE_COUNT_TOTAL_PLAN)
     if "status: completed" not in value_count_total_plan or "valueCountTotal" not in value_count_total_plan:
         failures.append("value count total plan must record completed status and verification")
+    hosted_plan = read(HOSTED_VALIDATION_PLAN)
+    workflow = read(".github/workflows/check.yml")
+    if "status: completed" not in hosted_plan or "make check" not in hosted_plan:
+        failures.append("hosted artifact validation plan must record completed status and verification")
+    for expected in [
+        "permissions:\n  contents: read",
+        "cancel-in-progress: true",
+        "runs-on: ubuntu-24.04",
+        "timeout-minutes: 10",
+        "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
+        "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
+        'python-version: "3.12"',
+        "run: make check",
+    ]:
+        if expected not in workflow:
+            failures.append(f"Check workflow must keep {expected}")
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:

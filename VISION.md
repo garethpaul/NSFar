@@ -43,6 +43,7 @@ Priority:
 - Keep the manifest value count total explicit
 - Keep `make lint`, `make test`, `make build`, and `make check` on the
   SDK-free static baseline
+- Keep artifact integrity validation pinned and read-only in hosted Linux CI
 
 Next priorities:
 

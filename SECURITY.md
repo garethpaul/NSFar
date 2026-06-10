@@ -38,6 +38,8 @@ Helpful reports include:
   bytes do not drift silently across checkouts.
   Run `make lint`, `make test`, `make build`, and `make check` before changing
   it or related archive metadata.
+- The pinned Linux workflow continuously verifies artifact bytes, mode, line
+  endings, checksum, and synchronized manifest metadata.
 
 
 ## Dependency and Supply Chain Security
