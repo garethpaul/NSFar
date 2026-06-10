@@ -19,6 +19,7 @@ GITATTRIBUTES_PLAN = "docs/plans/2026-06-09-artifact-gitattributes.md"
 DISTINCT_VALUES_PLAN = "docs/plans/2026-06-09-manifest-distinct-values.md"
 MAKE_GATE_PLAN = "docs/plans/2026-06-09-make-gate-aliases.md"
 BOUNDARY_VALUES_PLAN = "docs/plans/2026-06-09-manifest-boundary-values.md"
+VALUE_COUNT_TOTAL_PLAN = "docs/plans/2026-06-10-manifest-value-count-total.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -40,6 +41,7 @@ REQUIRED = [
     DISTINCT_VALUES_PLAN,
     MAKE_GATE_PLAN,
     BOUNDARY_VALUES_PLAN,
+    VALUE_COUNT_TOTAL_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -92,6 +94,7 @@ def main():
         "sha256": EXPECTED_SHA256,
         "bytes": len(artifact_bytes),
         "lineCount": len(lines),
+        "valueCountTotal": sum(value_counts.values()),
         "firstValue": int(lines[0]),
         "lastValue": int(lines[-1]),
         "minValue": min(int(line) for line in lines),
@@ -120,6 +123,7 @@ def main():
         "gitattributes",
         "distinct values",
         "boundary values",
+        "value count total",
     ]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
@@ -163,6 +167,9 @@ def main():
     boundary_values_plan = read(BOUNDARY_VALUES_PLAN)
     if "status: completed" not in boundary_values_plan or "firstValue" not in boundary_values_plan or "lastValue" not in boundary_values_plan:
         failures.append("boundary values plan must record completed status and verification")
+    value_count_total_plan = read(VALUE_COUNT_TOTAL_PLAN)
+    if "status: completed" not in value_count_total_plan or "valueCountTotal" not in value_count_total_plan:
+        failures.append("value count total plan must record completed status and verification")
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:

@@ -53,8 +53,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   regeneration notes are added.
 - `docs/artifact-manifest.json` records the artifact path, byte size, line
   count, value range, value counts, encoding, format, line ending, terminal
-  newline state, file mode, distinct values, sequence boundary values, and
-  checksum.
+  newline state, file mode, distinct values, sequence boundary values, value
+  count total, and checksum.
 - The artifact manifest uses schema version 1 so future metadata changes are
   explicit.
 - The artifact is preserved as a non-executable `100644` file mode.
@@ -88,6 +88,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   value domain remains explicit.
 - Keep artifact boundary values documented in the manifest so sequence-edge
   drift remains visible.
+- Keep the manifest value count total aligned with the artifact line count and
+  value-count histogram.
 - Keep the artifact file mode non-executable unless provenance explains why it
   should change.
 - Keep `.gitattributes` line-ending rules in place for byte-sensitive archive

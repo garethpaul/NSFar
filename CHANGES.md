@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-10
+
+- Added checked `valueCountTotal` metadata to the artifact manifest so the
+  histogram total stays aligned with the preserved line count.
+
 ## 2026-06-08
 
 - Documented the checked-in `gitfiti` file as a preserved numeric artifact.
