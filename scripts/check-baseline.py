@@ -22,6 +22,7 @@ BOUNDARY_VALUES_PLAN = "docs/plans/2026-06-09-manifest-boundary-values.md"
 VALUE_COUNT_TOTAL_PLAN = "docs/plans/2026-06-10-manifest-value-count-total.md"
 HOSTED_VALIDATION_PLAN = "docs/plans/2026-06-10-hosted-artifact-validation.md"
 SEQUENCE_SHAPE_PLAN = "docs/plans/2026-06-10-manifest-sequence-shape.md"
+SCHEMA_CLOSURE_PLAN = "docs/plans/2026-06-12-manifest-schema-closure.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -47,6 +48,7 @@ REQUIRED = [
     VALUE_COUNT_TOTAL_PLAN,
     HOSTED_VALIDATION_PLAN,
     SEQUENCE_SHAPE_PLAN,
+    SCHEMA_CLOSURE_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -141,6 +143,19 @@ def main():
         "distinctValues": sorted({int(line) for line in lines}),
         "valueCounts": value_counts,
     }
+    expected_manifest_keys = {"schemaVersion", *expected_manifest}
+    missing_manifest_keys = sorted(expected_manifest_keys - manifest.keys())
+    unexpected_manifest_keys = sorted(manifest.keys() - expected_manifest_keys)
+    if missing_manifest_keys:
+        failures.append(
+            "artifact manifest is missing schema keys: "
+            + ", ".join(missing_manifest_keys)
+        )
+    if unexpected_manifest_keys:
+        failures.append(
+            "artifact manifest has unexpected schema keys: "
+            + ", ".join(unexpected_manifest_keys)
+        )
     for key, expected in expected_manifest.items():
         if manifest.get(key) != expected:
             failures.append(f"artifact manifest {key} must match gitfiti")
@@ -165,6 +180,7 @@ def main():
         "value count total",
         "sequence shape",
         "run-length histogram",
+        "exact key set",
     ]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
@@ -218,6 +234,9 @@ def main():
     sequence_shape_plan = read(SEQUENCE_SHAPE_PLAN)
     if "status: completed" not in sequence_shape_plan or "runLengthCounts" not in sequence_shape_plan:
         failures.append("sequence shape plan must record completed status and verification")
+    schema_closure_plan = read(SCHEMA_CLOSURE_PLAN)
+    if "status: completed" not in schema_closure_plan or "unexpected manifest key" not in schema_closure_plan:
+        failures.append("manifest schema closure plan must record completed status and verification")
     for expected in [
         "permissions:\n  contents: read",
         "cancel-in-progress: true",

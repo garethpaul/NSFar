@@ -56,7 +56,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   newline state, file mode, distinct values, sequence boundary values, value
   count total, and checksum.
 - The artifact manifest uses schema version 1 so future metadata changes are
-  explicit.
+  explicit. Validation requires its exact key set, so misspelled, obsolete, or
+  undocumented fields cannot silently extend the archive contract.
 - The artifact is preserved as a non-executable `100644` file mode.
 - `.gitattributes` pins the `gitfiti` artifact and manifest to LF line endings
   so byte-sensitive archive files do not drift across checkouts.
@@ -94,6 +95,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   value-count histogram.
 - Keep the manifest sequence shape aligned with the artifact's 318 zero-based
   ascending runs and checked run-length histogram.
+- Keep the schema version 1 manifest on its exact key set; add or remove fields
+  only through a deliberate schema and validator update.
 - Keep the artifact file mode non-executable unless provenance explains why it
   should change.
 - Keep `.gitattributes` line-ending rules in place for byte-sensitive archive

@@ -1,6 +1,6 @@
 # Manifest Schema Closure
 
-status: planned
+status: completed
 
 ## Context
 
@@ -21,9 +21,12 @@ though schema version 1 is intended to be an explicit archive contract.
 
 ## Verification
 
-- `make lint`
-- `make test`
-- `make build`
-- `make check`
-- A temporary unexpected manifest key is rejected by `make check`.
-- `git diff --check`
+- `make lint` passed on 2026-06-12.
+- `make test` passed on 2026-06-12.
+- `make build` passed on 2026-06-12.
+- `make check` passed on 2026-06-12.
+- `make check` rejected a temporary `unexpectedValidationProbe` field as an
+  unexpected manifest key on 2026-06-12.
+- `make check` rejected a temporarily removed `bytes` field as a missing
+  schema key on 2026-06-12.
+- `git diff --check` passed on 2026-06-12.

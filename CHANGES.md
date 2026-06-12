@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-12
+
+- Closed the schema version 1 artifact manifest to its exact top-level key set
+  so missing, misspelled, obsolete, or undocumented fields fail validation.
+
 ## 2026-06-10
 
 - Added pinned, read-only Python 3.12 hosted validation for artifact and

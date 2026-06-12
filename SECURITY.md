@@ -35,7 +35,8 @@ Helpful reports include:
   newline metadata explicit. It also records the non-executable file mode and
   distinct values, boundary values, and value count total. It also records the
   sequence shape and run-length histogram so structural drift remains visible
-  without inferring it from raw rows.
+  without inferring it from raw rows. Schema version 1 requires an exact key
+  set so unexpected manifest metadata is rejected.
   `.gitattributes` pins the artifact and manifest to LF line endings so archive
   bytes do not drift silently across checkouts.
   Run `make lint`, `make test`, `make build`, and `make check` before changing

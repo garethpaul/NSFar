@@ -24,6 +24,8 @@ ending metadata, terminal newline state, file mode, distinct values, and
 boundary values. The manifest also records a value count total so the histogram
 can be checked against the artifact line count, plus sequence shape and a
 run-length histogram for its zero-based ascending runs.
+The schema version 1 validator also requires the manifest's exact key set so
+undocumented metadata cannot accumulate silently.
 
 The current focus is:
 
@@ -36,6 +38,7 @@ Priority:
 - Keep artifact-shape verification available through `make check`
 - Keep the artifact manifest synchronized with the preserved file
 - Keep the artifact manifest schema version explicit
+- Keep the manifest schema's exact key set enforced
 - Keep artifact line ending metadata explicit
 - Keep artifact file mode metadata explicit
 - Keep repository line-ending attributes aligned with byte-sensitive artifacts
