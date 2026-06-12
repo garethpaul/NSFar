@@ -4,7 +4,7 @@
 from pathlib import Path
 import hashlib
 import json
-import stat
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
@@ -20,9 +20,13 @@ DISTINCT_VALUES_PLAN = "docs/plans/2026-06-09-manifest-distinct-values.md"
 MAKE_GATE_PLAN = "docs/plans/2026-06-09-make-gate-aliases.md"
 BOUNDARY_VALUES_PLAN = "docs/plans/2026-06-09-manifest-boundary-values.md"
 VALUE_COUNT_TOTAL_PLAN = "docs/plans/2026-06-10-manifest-value-count-total.md"
+HOSTED_VALIDATION_PLAN = "docs/plans/2026-06-10-hosted-artifact-validation.md"
+SEQUENCE_SHAPE_PLAN = "docs/plans/2026-06-10-manifest-sequence-shape.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
+    ".github/CODEOWNERS",
+    ".github/workflows/check.yml",
     ".gitattributes",
     ".gitignore",
     "CHANGES.md",
@@ -42,6 +46,8 @@ REQUIRED = [
     MAKE_GATE_PLAN,
     BOUNDARY_VALUES_PLAN,
     VALUE_COUNT_TOTAL_PLAN,
+    HOSTED_VALIDATION_PLAN,
+    SEQUENCE_SHAPE_PLAN,
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -61,7 +67,15 @@ def main():
     artifact_bytes = artifact_path.read_bytes()
     if hashlib.sha256(artifact_bytes).hexdigest() != EXPECTED_SHA256:
         failures.append("gitfiti artifact checksum changed without a baseline update")
-    if stat.S_IMODE(artifact_path.stat().st_mode) != 0o644:
+    indexed_artifact = subprocess.run(
+        ["git", "ls-files", "--stage", "--", "gitfiti"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    indexed_mode = indexed_artifact.stdout.split(maxsplit=1)[0] if indexed_artifact.stdout else ""
+    if indexed_artifact.returncode != 0 or indexed_mode != "100644":
         failures.append("gitfiti artifact must stay a non-executable 100644 file")
     if b"\r" in artifact_bytes:
         failures.append("gitfiti artifact must use LF line endings")
@@ -84,6 +98,27 @@ def main():
     value_counts = {}
     for line in lines:
         value_counts[line] = value_counts.get(line, 0) + 1
+    values = [int(line) for line in lines]
+    run_lengths = []
+    current_run_length = 0
+    previous_value = None
+    for value in values:
+        if value == 0:
+            if current_run_length:
+                run_lengths.append(current_run_length)
+            current_run_length = 1
+        elif previous_value is None or value != previous_value + 1:
+            failures.append("gitfiti artifact must contain zero-based ascending runs")
+            current_run_length += 1
+        else:
+            current_run_length += 1
+        previous_value = value
+    if current_run_length:
+        run_lengths.append(current_run_length)
+    run_length_counts = {}
+    for length in run_lengths:
+        key = str(length)
+        run_length_counts[key] = run_length_counts.get(key, 0) + 1
     expected_manifest = {
         "path": "gitfiti",
         "encoding": "ascii",
@@ -99,6 +134,11 @@ def main():
         "lastValue": int(lines[-1]),
         "minValue": min(int(line) for line in lines),
         "maxValue": max(int(line) for line in lines),
+        "sequencePattern": "zero-based ascending runs",
+        "runCount": len(run_lengths),
+        "minRunLength": min(run_lengths),
+        "maxRunLength": max(run_lengths),
+        "runLengthCounts": run_length_counts,
         "distinctValues": sorted({int(line) for line in lines}),
         "valueCounts": value_counts,
     }
@@ -124,6 +164,8 @@ def main():
         "distinct values",
         "boundary values",
         "value count total",
+        "sequence shape",
+        "run-length histogram",
     ]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
@@ -170,6 +212,32 @@ def main():
     value_count_total_plan = read(VALUE_COUNT_TOTAL_PLAN)
     if "status: completed" not in value_count_total_plan or "valueCountTotal" not in value_count_total_plan:
         failures.append("value count total plan must record completed status and verification")
+    hosted_plan = read(HOSTED_VALIDATION_PLAN)
+    workflow = read(".github/workflows/check.yml")
+    codeowners = read(".github/CODEOWNERS")
+    if "status: completed" not in hosted_plan or "make check" not in hosted_plan:
+        failures.append("hosted artifact validation plan must record completed status and verification")
+    sequence_shape_plan = read(SEQUENCE_SHAPE_PLAN)
+    if "status: completed" not in sequence_shape_plan or "runLengthCounts" not in sequence_shape_plan:
+        failures.append("sequence shape plan must record completed status and verification")
+    for expected in [
+        "permissions:\n  contents: read",
+        "cancel-in-progress: true",
+        "runs-on: ubuntu-24.04",
+        "timeout-minutes: 10",
+        "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
+        "persist-credentials: false",
+        "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
+        'python-version: "3.12"',
+        "run: make check",
+    ]:
+        if expected not in workflow:
+            failures.append(f"Check workflow must keep {expected}")
+    workflow_files = sorted(str(path.relative_to(ROOT)) for path in (ROOT / ".github/workflows").rglob("*") if path.is_file())
+    if workflow_files != [".github/workflows/check.yml"]:
+        failures.append("check.yml must be the repository's only hosted workflow")
+    if codeowners.strip() != "* @garethpaul":
+        failures.append("CODEOWNERS must assign the repository to @garethpaul")
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:

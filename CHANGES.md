@@ -2,8 +2,14 @@
 
 ## 2026-06-10
 
+- Added pinned, read-only Python 3.12 hosted validation for artifact and
+  manifest integrity.
+- Corrected file mode validation to inspect Git's tracked mode instead of
+  checkout permissions that can vary with the local umask.
 - Added checked `valueCountTotal` metadata to the artifact manifest so the
   histogram total stays aligned with the preserved line count.
+- Added checked sequence-shape metadata for the artifact's 318 zero-based
+  ascending runs, including its run-length histogram.
 
 ## 2026-06-08
 

@@ -14,6 +14,18 @@
   "lastValue": 8,
   "minValue": 0,
   "maxValue": 17,
+  "sequencePattern": "zero-based ascending runs",
+  "runCount": 318,
+  "minRunLength": 3,
+  "maxRunLength": 18,
+  "runLengthCounts": {
+    "3": 33,
+    "6": 68,
+    "9": 93,
+    "12": 109,
+    "15": 11,
+    "18": 4
+  },
   "distinctValues": [
     0,
     1,

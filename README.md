@@ -70,6 +70,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make build`
 - `make check`
 - `python3 scripts/check-baseline.py`
+- Pinned `ubuntu-24.04` GitHub Actions runs the same byte-sensitive artifact and
+  manifest integrity checks on Python 3.12.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -90,6 +92,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   drift remains visible.
 - Keep the manifest value count total aligned with the artifact line count and
   value-count histogram.
+- Keep the manifest sequence shape aligned with the artifact's 318 zero-based
+  ascending runs and checked run-length histogram.
 - Keep the artifact file mode non-executable unless provenance explains why it
   should change.
 - Keep `.gitattributes` line-ending rules in place for byte-sensitive archive
