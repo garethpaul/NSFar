@@ -43,6 +43,8 @@ Helpful reports include:
   it or related archive metadata.
 - The pinned Linux workflow continuously verifies artifact bytes, mode, line
   endings, checksum, and synchronized manifest metadata.
+- The hosted gate uses a credential-free checkout so the read-only workflow
+  token is not retained in the runner's Git configuration.
 
 
 ## Dependency and Supply Chain Security

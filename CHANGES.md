@@ -2,6 +2,8 @@
 
 ## 2026-06-12
 
+- Disabled persisted checkout credentials and enforced the sole pinned
+  credential-free workflow boundary.
 - Closed the schema version 1 artifact manifest to its exact top-level key set
   so missing, misspelled, obsolete, or undocumented fields fail validation.
 
