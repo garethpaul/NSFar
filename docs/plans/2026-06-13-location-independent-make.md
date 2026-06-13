@@ -1,6 +1,6 @@
 # Location-Independent NSFar Verification
 
-status: in progress
+status: completed
 
 ## Context
 
@@ -40,3 +40,25 @@ mutation verification after it completes.
 - Do not infer or recreate the unknown generator, source instructions, or
   intended rendered pattern.
 - Preserve the existing stacked PR chain and exact-head evidence.
+
+## Work Completed
+
+- Rooted every dependency-free Make alias at the checkout containing the loaded
+  Makefile while preserving the target graph and `PYTHON` override.
+- Added exact Makefile, README invocation, completed status, and verification
+  evidence contracts to `scripts/check-baseline.py`.
+- Documented absolute Makefile invocation without changing the artifact,
+  manifest, workflow, or history.
+
+## Verification Completed
+
+- Root and external-directory `lint`, `test`, `build`, `verify`, and `check`
+  gates passed through the checkout's absolute Makefile path.
+- `python3 -m py_compile scripts/check-baseline.py` and `git diff --check`
+  passed.
+- Six isolated hostile mutations covering root derivation, checker resolution,
+  alias delegation, the Python override, completed plan evidence, and README
+  invocation guidance were rejected by the intended contracts.
+- Artifact and manifest hashes, tracked file mode, line endings, intended paths,
+  secret patterns, conflict markers, generated artifacts, workflows, history,
+  and credential boundaries remained unchanged or passed their audits.

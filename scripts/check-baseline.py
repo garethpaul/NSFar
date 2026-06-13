@@ -11,6 +11,21 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
+EXPECTED_MAKEFILE = """ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+.PHONY: build check lint static-check test verify
+
+PYTHON ?= python3
+
+check: verify
+
+verify: static-check
+
+lint test build: static-check
+
+static-check:
+\tPYTHONDONTWRITEBYTECODE=1 $(PYTHON) "$(ROOT)/scripts/check-baseline.py"
+"""
 PLAN = "docs/plans/2026-06-08-nsfar-artifact-baseline.md"
 MANIFEST_PLAN = "docs/plans/2026-06-09-artifact-manifest.md"
 SCHEMA_PLAN = "docs/plans/2026-06-09-manifest-schema-version.md"
@@ -26,6 +41,7 @@ SEQUENCE_SHAPE_PLAN = "docs/plans/2026-06-10-manifest-sequence-shape.md"
 SCHEMA_CLOSURE_PLAN = "docs/plans/2026-06-12-manifest-schema-closure.md"
 CHECKOUT_CREDENTIAL_PLAN = "docs/plans/2026-06-12-checkout-credential-boundary.md"
 PROVENANCE_PLAN = "docs/plans/2026-06-13-artifact-construction-provenance.md"
+LOCATION_INDEPENDENT_MAKE_PLAN = "docs/plans/2026-06-13-location-independent-make.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -54,6 +70,7 @@ REQUIRED = [
     SCHEMA_CLOSURE_PLAN,
     CHECKOUT_CREDENTIAL_PLAN,
     PROVENANCE_PLAN,
+    LOCATION_INDEPENDENT_MAKE_PLAN,
     "docs/artifact-provenance.md",
     "gitfiti",
     "scripts/check-baseline.py",
@@ -174,7 +191,22 @@ def main():
         if manifest.get(key) != expected:
             failures.append(f"artifact manifest {key} must match gitfiti")
 
-    docs = "\n".join(read(path) for path in ["README.md", "SECURITY.md", "VISION.md"])
+    readme = read("README.md")
+    docs = "\n".join([readme, read("SECURITY.md"), read("VISION.md")])
+    location_independent_make_plan = read(LOCATION_INDEPENDENT_MAKE_PLAN)
+    if "make -f /path/to/NSFar/Makefile check" not in readme:
+        failures.append("README must document location-independent Makefile invocation")
+    if not all(
+        evidence in location_independent_make_plan.lower()
+        for evidence in [
+            "status: completed",
+            "root and external-directory",
+            "six isolated hostile mutations",
+        ]
+    ):
+        failures.append(
+            "location-independent Make plan must record completed root, external, and mutation verification"
+        )
     for phrase in [
         "make lint",
         "make test",
@@ -221,15 +253,10 @@ def main():
         failures.append("README must link the artifact provenance note")
 
     makefile = read("Makefile")
-    for phrase in [
-        ".PHONY: build check lint static-check test verify",
-        "check: verify",
-        "verify: static-check",
-        "lint test build: static-check",
-        "PYTHONDONTWRITEBYTECODE=1 $(PYTHON) scripts/check-baseline.py",
-    ]:
-        if phrase not in makefile:
-            failures.append(f"Makefile must include standard gate alias: {phrase}")
+    if makefile != EXPECTED_MAKEFILE:
+        failures.append(
+            "Makefile must exactly preserve rooted dependency-free aliases and the Python override"
+        )
 
     plan = read(PLAN)
     if "status: completed" not in plan or "make check" not in plan:

@@ -73,6 +73,9 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make test`
 - `make build`
 - `make check`
+- The Make gates are location-independent. From another directory, pass the
+  checkout's Makefile by absolute path, such as
+  `make -f /path/to/NSFar/Makefile check`.
 - `python3 scripts/check-baseline.py`
 - Pinned `ubuntu-24.04` GitHub Actions runs the same byte-sensitive artifact and
   manifest integrity checks on Python 3.12. The checkout credentials are not
@@ -112,6 +115,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 - Run `make lint`, `make test`, `make build`, and `make check` before changing
   the artifact or archive metadata.
+- Use an absolute Makefile path when running those gates outside the checkout.
 - See `docs/plans/2026-06-09-make-gate-aliases.md` for the local verification
   gate aliases.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.

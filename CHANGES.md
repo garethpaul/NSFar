@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Made every dependency-free Make alias resolve the static checker from the
+  checkout when the Makefile is invoked by absolute path.
 - Documented that 2,889 one-line-addition commits constructed the preserved
   artifact while leaving its generator and intended rendered pattern unresolved.
 
