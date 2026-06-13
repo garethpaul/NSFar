@@ -50,11 +50,14 @@ Priority:
   SDK-free static baseline
 - Keep artifact integrity validation pinned and read-only in hosted Linux CI
 - Keep hosted source retrieval credential-free after checkout
+- Keep established construction-history evidence separate from unresolved
+  generator and intended-pattern claims
 
 Next priorities:
 
 - Add a short README describing the repository purpose
-- Identify whether the numeric artifact is source data or generated output
+- Identify the missing generator or source instructions, if independently
+  verifiable evidence becomes available
 - Add reproduction notes if the artifact can be regenerated
 - Extend the artifact manifest with provenance once the source is identified
 - Archive or remove obsolete files only with clear rationale

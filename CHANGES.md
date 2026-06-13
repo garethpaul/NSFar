@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-13
+
+- Documented that 2,889 one-line-addition commits constructed the preserved
+  artifact while leaving its generator and intended rendered pattern unresolved.
+
 ## 2026-06-12
 
 - Disabled persisted checkout credentials and enforced the sole pinned

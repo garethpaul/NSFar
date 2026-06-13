@@ -51,6 +51,9 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - There is no installable runtime in the current repository.
 - Treat `gitfiti` as a preserved numeric artifact until provenance or
   regeneration notes are added.
+- [`docs/artifact-provenance.md`](docs/artifact-provenance.md) records that the
+  file was built by 2,889 one-line-addition commits while leaving the generator,
+  source instructions, and intended rendered pattern explicitly unresolved.
 - `docs/artifact-manifest.json` records the artifact path, byte size, line
   count, value range, value counts, encoding, format, line ending, terminal
   newline state, file mode, distinct values, sequence boundary values, value
@@ -86,6 +89,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - The scan did not identify production authentication, payment, or secret-management code. Treat future additions in those areas as security-sensitive.
 - Do not rewrite the `gitfiti` numeric artifact without a reproducible source or
   documented provenance.
+- Construction history is not a reproduction recipe; do not regenerate the
+  artifact from a guessed tool, image, or interpretation.
 - Keep the artifact manifest aligned with the checked-in artifact whenever
   archive metadata changes.
 - Keep artifact distinct values documented in the manifest so the observed

@@ -4,6 +4,7 @@
 from pathlib import Path
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -24,6 +25,7 @@ HOSTED_VALIDATION_PLAN = "docs/plans/2026-06-10-hosted-artifact-validation.md"
 SEQUENCE_SHAPE_PLAN = "docs/plans/2026-06-10-manifest-sequence-shape.md"
 SCHEMA_CLOSURE_PLAN = "docs/plans/2026-06-12-manifest-schema-closure.md"
 CHECKOUT_CREDENTIAL_PLAN = "docs/plans/2026-06-12-checkout-credential-boundary.md"
+PROVENANCE_PLAN = "docs/plans/2026-06-13-artifact-construction-provenance.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -51,6 +53,8 @@ REQUIRED = [
     SEQUENCE_SHAPE_PLAN,
     SCHEMA_CLOSURE_PLAN,
     CHECKOUT_CREDENTIAL_PLAN,
+    PROVENANCE_PLAN,
+    "docs/artifact-provenance.md",
     "gitfiti",
     "scripts/check-baseline.py",
 ]
@@ -58,6 +62,14 @@ REQUIRED = [
 
 def read(relative_path):
     return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
+
+
+def markdown_section(text, heading):
+    match = re.search(
+        rf"(?ms)^## {re.escape(heading)}\s*$\n(.*?)(?=^## |\Z)",
+        text,
+    )
+    return match.group(1).strip() if match else ""
 
 
 def main():
@@ -183,9 +195,30 @@ def main():
         "sequence shape",
         "run-length histogram",
         "exact key set",
+        "docs/artifact-provenance.md",
+        "construction history is not a reproduction recipe",
     ]:
         if phrase.lower() not in docs.lower():
             failures.append(f"docs must mention {phrase}")
+
+    provenance = " ".join(read("docs/artifact-provenance.md").split())
+    for phrase in [
+        "Construction status: partially established",
+        "exactly 2,889 commits",
+        "Each commit added one line to the file and deleted none",
+        "425882d4734218b7fc5b5f672611d671b22c93b7",
+        "5b41cbeb9e52af1e0ac449b779b8ff06c212f4f1",
+        "2013-12-08T12:00:00-08:00",
+        "2014-11-29T12:00:00-08:00",
+        "does not establish the generator, source instructions, or intended rendered pattern",
+        "Author and committer dates are repository metadata",
+        "schema version 1 manifest is intentionally unchanged",
+        "A shallow hosted checkout cannot reproduce the history counts",
+    ]:
+        if phrase not in provenance:
+            failures.append(f"artifact provenance must include {phrase}")
+    if "[`docs/artifact-provenance.md`](docs/artifact-provenance.md)" not in read("README.md"):
+        failures.append("README must link the artifact provenance note")
 
     makefile = read("Makefile")
     for phrase in [
@@ -246,6 +279,30 @@ def main():
         or "hostile mutations rejected" not in checkout_credential_plan
     ):
         failures.append("checkout credential plan must record completed status and verification")
+    provenance_plan = read(PROVENANCE_PLAN)
+    provenance_status = re.findall(r"(?mi)^status:\s*(.+?)\s*$", provenance_plan)
+    provenance_work = markdown_section(provenance_plan, "Work Completed")
+    provenance_verification = markdown_section(provenance_plan, "Verification Completed")
+    if provenance_status != ["completed"] or not provenance_work:
+        failures.append("artifact provenance plan must record completed status and work")
+    if not provenance_verification or re.search(
+        r"(?i)\b(?:pending|todo|tbd|not run)\b", provenance_verification
+    ):
+        failures.append("artifact provenance plan must record completed verification")
+    for evidence in [
+        "2,889 commits",
+        "2,889 additions and zero deletions",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "make lint",
+        "make test",
+        "make build",
+        "make check",
+        "external working directory",
+        "hostile mutations rejected",
+        "git diff --check",
+    ]:
+        if evidence not in provenance_verification:
+            failures.append(f"artifact provenance verification must record {evidence}")
     workflow_files = sorted(
         path.relative_to(ROOT).as_posix()
         for path in (ROOT / ".github/workflows").iterdir()
