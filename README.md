@@ -80,6 +80,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - Pinned `ubuntu-24.04` GitHub Actions runs the same byte-sensitive artifact and
   manifest integrity checks on Python 3.12. The checkout credentials are not
   persisted after source retrieval.
+- Malformed artifact rows fail cleanly without traceback output, so integrity
+  diagnostics remain visible instead of being replaced by parser exceptions.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 

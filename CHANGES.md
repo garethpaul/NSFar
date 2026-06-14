@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-14
+
+- Made malformed or out-of-range artifact rows return controlled integrity
+  diagnostics instead of crashing the checker during integer conversion.
+
 ## 2026-06-13
 
 - Made every dependency-free Make alias resolve the static checker from the

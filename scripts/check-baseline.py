@@ -42,6 +42,7 @@ SCHEMA_CLOSURE_PLAN = "docs/plans/2026-06-12-manifest-schema-closure.md"
 CHECKOUT_CREDENTIAL_PLAN = "docs/plans/2026-06-12-checkout-credential-boundary.md"
 PROVENANCE_PLAN = "docs/plans/2026-06-13-artifact-construction-provenance.md"
 LOCATION_INDEPENDENT_MAKE_PLAN = "docs/plans/2026-06-13-location-independent-make.md"
+MALFORMED_ARTIFACT_PLAN = "docs/plans/2026-06-14-malformed-artifact-diagnostics.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -71,6 +72,7 @@ REQUIRED = [
     CHECKOUT_CREDENTIAL_PLAN,
     PROVENANCE_PLAN,
     LOCATION_INDEPENDENT_MAKE_PLAN,
+    MALFORMED_ARTIFACT_PLAN,
     "docs/artifact-provenance.md",
     "gitfiti",
     "scripts/check-baseline.py",
@@ -79,6 +81,65 @@ REQUIRED = [
 
 def read(relative_path):
     return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
+
+
+def parse_artifact_values(lines):
+    values = []
+    invalid = []
+    for line in lines:
+        if not line.isdigit():
+            invalid.append(line)
+            continue
+        value = int(line)
+        if not 0 <= value <= 17:
+            invalid.append(line)
+            continue
+        values.append(value)
+    return (None, invalid) if invalid else (values, [])
+
+
+def build_value_manifest(values, failures):
+    if not values:
+        return {}
+
+    value_counts = {}
+    for value in values:
+        key = str(value)
+        value_counts[key] = value_counts.get(key, 0) + 1
+    run_lengths = []
+    current_run_length = 0
+    previous_value = None
+    for value in values:
+        if value == 0:
+            if current_run_length:
+                run_lengths.append(current_run_length)
+            current_run_length = 1
+        elif previous_value is None or value != previous_value + 1:
+            failures.append("gitfiti artifact must contain zero-based ascending runs")
+            current_run_length += 1
+        else:
+            current_run_length += 1
+        previous_value = value
+    if current_run_length:
+        run_lengths.append(current_run_length)
+    run_length_counts = {}
+    for length in run_lengths:
+        key = str(length)
+        run_length_counts[key] = run_length_counts.get(key, 0) + 1
+    return {
+        "valueCountTotal": len(values),
+        "firstValue": values[0],
+        "lastValue": values[-1],
+        "minValue": min(values),
+        "maxValue": max(values),
+        "sequencePattern": "zero-based ascending runs",
+        "runCount": len(run_lengths),
+        "minRunLength": min(run_lengths),
+        "maxRunLength": max(run_lengths),
+        "runLengthCounts": run_length_counts,
+        "distinctValues": sorted(set(values)),
+        "valueCounts": value_counts,
+    }
 
 
 def markdown_section(text, heading):
@@ -117,40 +178,28 @@ def main():
     lines = artifact_bytes.decode("ascii", errors="replace").splitlines()
     if len(lines) != 2889:
         failures.append("gitfiti artifact must stay at 2889 lines")
-    invalid = [line for line in lines if not line.isdigit() or not 0 <= int(line) <= 17]
+    values, invalid = parse_artifact_values(lines)
     if invalid:
         failures.append("gitfiti artifact must contain only integer rows from 0 through 17")
-    if not {"0", "17"}.issubset(set(lines)):
+    if values is not None and not {0, 17}.issubset(set(values)):
         failures.append("gitfiti artifact must preserve the observed 0 through 17 range")
 
+    malformed_values, malformed_rows = parse_artifact_values(
+        ["0", "not-an-integer", "18"]
+    )
+    if malformed_values is not None or malformed_rows != ["not-an-integer", "18"]:
+        failures.append("artifact value parser must reject malformed rows without partial values")
+    sample_values, sample_invalid = parse_artifact_values(["0", "1", "17"])
+    if sample_values != [0, 1, 17] or sample_invalid:
+        failures.append("artifact value parser must preserve valid rows")
+    invalid_manifest = build_value_manifest(None, [])
+    empty_manifest = build_value_manifest([], [])
+    if invalid_manifest != {} or empty_manifest != {}:
+        failures.append("artifact manifest derivation must ignore invalid or empty value sets")
     manifest = json.loads(read(MANIFEST))
     if manifest.get("schemaVersion") != 1:
         failures.append("artifact manifest schemaVersion must be 1")
 
-    value_counts = {}
-    for line in lines:
-        value_counts[line] = value_counts.get(line, 0) + 1
-    values = [int(line) for line in lines]
-    run_lengths = []
-    current_run_length = 0
-    previous_value = None
-    for value in values:
-        if value == 0:
-            if current_run_length:
-                run_lengths.append(current_run_length)
-            current_run_length = 1
-        elif previous_value is None or value != previous_value + 1:
-            failures.append("gitfiti artifact must contain zero-based ascending runs")
-            current_run_length += 1
-        else:
-            current_run_length += 1
-        previous_value = value
-    if current_run_length:
-        run_lengths.append(current_run_length)
-    run_length_counts = {}
-    for length in run_lengths:
-        key = str(length)
-        run_length_counts[key] = run_length_counts.get(key, 0) + 1
     expected_manifest = {
         "path": "gitfiti",
         "encoding": "ascii",
@@ -161,20 +210,15 @@ def main():
         "sha256": EXPECTED_SHA256,
         "bytes": len(artifact_bytes),
         "lineCount": len(lines),
-        "valueCountTotal": sum(value_counts.values()),
-        "firstValue": int(lines[0]),
-        "lastValue": int(lines[-1]),
-        "minValue": min(int(line) for line in lines),
-        "maxValue": max(int(line) for line in lines),
-        "sequencePattern": "zero-based ascending runs",
-        "runCount": len(run_lengths),
-        "minRunLength": min(run_lengths),
-        "maxRunLength": max(run_lengths),
-        "runLengthCounts": run_length_counts,
-        "distinctValues": sorted({int(line) for line in lines}),
-        "valueCounts": value_counts,
     }
-    expected_manifest_keys = {"schemaVersion", *expected_manifest}
+    expected_manifest_keys = {
+        "schemaVersion", "path", "encoding", "format", "fileMode",
+        "lineEnding", "trailingNewline", "sha256", "bytes", "lineCount",
+        "valueCountTotal", "firstValue", "lastValue", "minValue", "maxValue",
+        "sequencePattern", "runCount", "minRunLength", "maxRunLength",
+        "runLengthCounts", "distinctValues", "valueCounts",
+    }
+    expected_manifest.update(build_value_manifest(values, failures))
     missing_manifest_keys = sorted(expected_manifest_keys - manifest.keys())
     unexpected_manifest_keys = sorted(manifest.keys() - expected_manifest_keys)
     if missing_manifest_keys:
@@ -330,6 +374,29 @@ def main():
     ]:
         if evidence not in provenance_verification:
             failures.append(f"artifact provenance verification must record {evidence}")
+    malformed_plan = read(MALFORMED_ARTIFACT_PLAN)
+    malformed_status = re.findall(r"(?mi)^status:\s*(.+?)\s*$", malformed_plan)
+    malformed_work = markdown_section(malformed_plan, "Work Completed")
+    malformed_verification = markdown_section(malformed_plan, "Verification Completed")
+    if (malformed_status != ["completed"] or not malformed_work or
+            not malformed_verification or re.search(
+                r"(?i)\b(?:pending|todo|tbd|not run|to be recorded)\b",
+                malformed_verification,
+            )):
+        failures.append("malformed artifact diagnostics plan must record completed work and verification")
+    for evidence in [
+        "controlled nonzero result without a traceback",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "make lint",
+        "make test",
+        "make build",
+        "make check",
+        "external working directory",
+        "hostile mutations",
+        "git diff --check",
+    ]:
+        if evidence not in malformed_verification:
+            failures.append(f"malformed artifact verification must record {evidence}")
     workflow_files = sorted(
         path.relative_to(ROOT).as_posix()
         for path in (ROOT / ".github/workflows").iterdir()
@@ -367,6 +434,7 @@ def main():
     for phrase in [
         "checkout credentials are not persisted",
         "credential-free checkout",
+        "malformed artifact rows fail cleanly without traceback output",
     ]:
         if phrase not in docs:
             failures.append(f"repository guidance must mention {phrase}")
