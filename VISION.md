@@ -53,6 +53,7 @@ Priority:
 - Keep established construction-history evidence separate from unresolved
   generator and intended-pattern claims
 - Keep malformed artifact rows failing cleanly without traceback output
+- Ensure malformed artifact manifests fail cleanly without traceback output
 
 Next priorities:
 

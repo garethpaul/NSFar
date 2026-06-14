@@ -82,6 +82,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   persisted after source retrieval.
 - Malformed artifact rows fail cleanly without traceback output, so integrity
   diagnostics remain visible instead of being replaced by parser exceptions.
+- Malformed artifact manifests fail cleanly without traceback output, and the
+  checker continues independent artifact and repository diagnostics.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 

@@ -43,6 +43,7 @@ CHECKOUT_CREDENTIAL_PLAN = "docs/plans/2026-06-12-checkout-credential-boundary.m
 PROVENANCE_PLAN = "docs/plans/2026-06-13-artifact-construction-provenance.md"
 LOCATION_INDEPENDENT_MAKE_PLAN = "docs/plans/2026-06-13-location-independent-make.md"
 MALFORMED_ARTIFACT_PLAN = "docs/plans/2026-06-14-malformed-artifact-diagnostics.md"
+MALFORMED_MANIFEST_PLAN = "docs/plans/2026-06-14-malformed-manifest-diagnostics.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -73,6 +74,7 @@ REQUIRED = [
     PROVENANCE_PLAN,
     LOCATION_INDEPENDENT_MAKE_PLAN,
     MALFORMED_ARTIFACT_PLAN,
+    MALFORMED_MANIFEST_PLAN,
     "docs/artifact-provenance.md",
     "gitfiti",
     "scripts/check-baseline.py",
@@ -96,6 +98,16 @@ def parse_artifact_values(lines):
             continue
         values.append(value)
     return (None, invalid) if invalid else (values, [])
+
+
+def parse_manifest(text):
+    try:
+        manifest = json.loads(text)
+    except (TypeError, ValueError) as error:
+        return None, str(error)
+    if not isinstance(manifest, dict):
+        return None, "top-level JSON value must be an object"
+    return manifest, None
 
 
 def build_value_manifest(values, failures):
@@ -196,7 +208,32 @@ def main():
     empty_manifest = build_value_manifest([], [])
     if invalid_manifest != {} or empty_manifest != {}:
         failures.append("artifact manifest derivation must ignore invalid or empty value sets")
-    manifest = json.loads(read(MANIFEST))
+    malformed_manifest, malformed_manifest_error = parse_manifest("{")
+    if malformed_manifest is not None or not malformed_manifest_error:
+        failures.append("manifest parser must reject malformed JSON without raising")
+    non_object_manifest, non_object_manifest_error = parse_manifest("[]")
+    if non_object_manifest is not None or non_object_manifest_error != "top-level JSON value must be an object":
+        failures.append("manifest parser must reject non-object JSON values")
+    sample_manifest, sample_manifest_error = parse_manifest('{"schemaVersion": 1}')
+    if sample_manifest != {"schemaVersion": 1} or sample_manifest_error is not None:
+        failures.append("manifest parser must preserve valid JSON objects")
+    checker_source = read("scripts/check-baseline.py")
+    for required_manifest_contract in [
+        "parse_" + 'manifest("{")',
+        "parse_" + 'manifest("[]")',
+        "isinstance(manifest, " + "dict)",
+        "manifest, manifest_error = " + "parse_manifest(read(MANIFEST))",
+        "manifest = " + "{}",
+    ]:
+        if required_manifest_contract not in checker_source:
+            failures.append(
+                "checker must preserve safe manifest parsing contract: "
+                + required_manifest_contract
+            )
+    manifest, manifest_error = parse_manifest(read(MANIFEST))
+    if manifest_error:
+        failures.append(f"artifact manifest must contain a valid JSON object: {manifest_error}")
+        manifest = {}
     if manifest.get("schemaVersion") != 1:
         failures.append("artifact manifest schemaVersion must be 1")
 
@@ -397,6 +434,36 @@ def main():
     ]:
         if evidence not in malformed_verification:
             failures.append(f"malformed artifact verification must record {evidence}")
+    malformed_manifest_plan = read(MALFORMED_MANIFEST_PLAN)
+    malformed_manifest_status = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", malformed_manifest_plan
+    )
+    malformed_manifest_work = markdown_section(
+        malformed_manifest_plan, "Work Completed"
+    )
+    malformed_manifest_verification = markdown_section(
+        malformed_manifest_plan, "Verification Completed"
+    )
+    if (malformed_manifest_status != ["completed"] or
+            not malformed_manifest_work or
+            not malformed_manifest_verification or re.search(
+                r"(?i)\b(?:pending|todo|tbd|not run|to be recorded)\b",
+                malformed_manifest_verification,
+            )):
+        failures.append("malformed manifest diagnostics plan must record completed work and verification")
+    for evidence in [
+        "controlled nonzero result without a traceback",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "make lint",
+        "make test",
+        "make build",
+        "make check",
+        "external working directory",
+        "hostile mutations",
+        "git diff --check",
+    ]:
+        if evidence not in malformed_manifest_verification:
+            failures.append(f"malformed manifest verification must record {evidence}")
     workflow_files = sorted(
         path.relative_to(ROOT).as_posix()
         for path in (ROOT / ".github/workflows").iterdir()
@@ -435,9 +502,22 @@ def main():
         "checkout credentials are not persisted",
         "credential-free checkout",
         "malformed artifact rows fail cleanly without traceback output",
+        "malformed artifact manifests fail cleanly without traceback output",
     ]:
         if phrase not in docs:
             failures.append(f"repository guidance must mention {phrase}")
+    guidance_documents = [
+        " ".join(read(path).lower().split())
+        for path in ["README.md", "SECURITY.md", "VISION.md", "CHANGES.md"]
+    ]
+    if not all(
+        "malformed artifact manifests fail cleanly without traceback output"
+        in document
+        for document in guidance_documents
+    ):
+        failures.append(
+            "all repository guidance must document controlled malformed manifest diagnostics"
+        )
 
     gitignore = read(".gitignore")
     for expected in [".env", "*.log", "tmp/"]:

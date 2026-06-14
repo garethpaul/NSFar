@@ -2,6 +2,8 @@
 
 ## 2026-06-14
 
+- Made malformed artifact manifests fail cleanly without traceback output,
+  including non-object JSON, while independent checker findings continue.
 - Made malformed or out-of-range artifact rows return controlled integrity
   diagnostics instead of crashing the checker during integer conversion.
 

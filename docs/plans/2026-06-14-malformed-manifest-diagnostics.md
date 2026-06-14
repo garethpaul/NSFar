@@ -1,6 +1,6 @@
 # Malformed Manifest Diagnostics
 
-status: in_progress
+status: completed
 
 ## Context
 
@@ -44,16 +44,30 @@ Files: `README.md`, `SECURITY.md`, `VISION.md`, `CHANGES.md`
 - Document controlled malformed-manifest diagnostics and the unchanged
   protected artifact boundary.
 
-## Verification Planned
+## Work Completed
 
-- Reproduce malformed manifest JSON in a disposable indexed copy and confirm a
-  normal nonzero result without traceback output.
-- Run Python compilation and all four Make aliases from the checkout.
-- Run the absolute Makefile check from an external directory.
-- Reject isolated mutations of loader use, malformed/non-object fixtures,
-  documentation, and completed plan evidence.
-- Confirm the protected artifact and manifest hashes and modes are unchanged.
-- Run diff, generated-artifact, conflict-marker, and changed-line secret audits.
+- Added a safe manifest parser that rejects malformed JSON and non-object
+  top-level values without raising.
+- Continued schema and independent repository checks with an empty manifest
+  only after recording the controlled load diagnostic.
+- Added in-memory malformed, non-object, and valid-object fixtures plus static
+  contracts requiring the real manifest path and fallback to use the loader.
+- Documented controlled manifest diagnostics without modifying the protected
+  artifact or schema version 1 manifest.
+
+## Verification Completed
+
+- Disposable malformed and non-object manifest fixtures each returned a
+  controlled nonzero result without a traceback.
+- `python3 -m py_compile scripts/check-baseline.py` passed.
+- `make lint`, `make test`, `make build`, and `make check` passed.
+- The checker passed from an external working directory through the absolute
+  Makefile path.
+- Five isolated hostile mutations of loader use, the non-object fixture, the
+  type guard, the empty-manifest fallback, and documentation were rejected.
+- Protected artifact and manifest hashes and tracked modes remained unchanged.
+- `git diff --check`, generated-artifact, conflict-marker, and changed-line
+  secret audits passed.
 
 ## Boundaries
 
