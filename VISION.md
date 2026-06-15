@@ -55,6 +55,7 @@ Priority:
 - Keep malformed artifact rows failing cleanly without traceback output
 - Ensure malformed artifact manifests fail cleanly without traceback output
 - Ensure missing required files fail cleanly without traceback output
+- Ensure Git index probe failures fail cleanly without traceback output
 
 Next priorities:
 

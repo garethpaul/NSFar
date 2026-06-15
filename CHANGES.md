@@ -4,6 +4,8 @@
 
 - Made missing required files fail cleanly without traceback output while
   independent artifact and repository diagnostics continue.
+- Made Git index probe failures fail cleanly without traceback output while
+  tracked-mode and independent repository diagnostics continue.
 
 ## 2026-06-14
 

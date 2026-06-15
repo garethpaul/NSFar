@@ -45,6 +45,7 @@ LOCATION_INDEPENDENT_MAKE_PLAN = "docs/plans/2026-06-13-location-independent-mak
 MALFORMED_ARTIFACT_PLAN = "docs/plans/2026-06-14-malformed-artifact-diagnostics.md"
 MALFORMED_MANIFEST_PLAN = "docs/plans/2026-06-14-malformed-manifest-diagnostics.md"
 MISSING_REQUIRED_FILE_PLAN = "docs/plans/2026-06-15-missing-required-file-diagnostics.md"
+GIT_PROBE_PLAN = "docs/plans/2026-06-15-git-probe-diagnostics.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -77,6 +78,7 @@ REQUIRED = [
     MALFORMED_ARTIFACT_PLAN,
     MALFORMED_MANIFEST_PLAN,
     MISSING_REQUIRED_FILE_PLAN,
+    GIT_PROBE_PLAN,
     "docs/artifact-provenance.md",
     "gitfiti",
     "scripts/check-baseline.py",
@@ -113,6 +115,22 @@ def parse_manifest(text):
     if not isinstance(manifest, dict):
         return None, "top-level JSON value must be an object"
     return manifest, None
+
+
+def read_indexed_mode(relative_path):
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "--stage", "--", relative_path],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as error:
+        return "", f"git index probe could not start: {error}"
+    if result.returncode != 0:
+        return "", f"git index probe exited with status {result.returncode}"
+    return result.stdout.split(maxsplit=1)[0] if result.stdout else "", None
 
 
 def build_value_manifest(values, failures):
@@ -177,15 +195,10 @@ def main():
     artifact_bytes = artifact_path.read_bytes() if artifact_path.is_file() else b""
     if hashlib.sha256(artifact_bytes).hexdigest() != EXPECTED_SHA256:
         failures.append("gitfiti artifact checksum changed without a baseline update")
-    indexed_artifact = subprocess.run(
-        ["git", "ls-files", "--stage", "--", "gitfiti"],
-        cwd=ROOT,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    indexed_mode = indexed_artifact.stdout.split(maxsplit=1)[0] if indexed_artifact.stdout else ""
-    if indexed_artifact.returncode != 0 or indexed_mode != "100644":
+    indexed_mode, index_probe_error = read_indexed_mode("gitfiti")
+    if index_probe_error:
+        failures.append(f"gitfiti artifact index mode probe failed: {index_probe_error}")
+    if indexed_mode != "100644":
         failures.append("gitfiti artifact must stay a non-executable 100644 file")
     if b"\r" in artifact_bytes:
         failures.append("gitfiti artifact must use LF line endings")
@@ -232,6 +245,18 @@ def main():
             failures.append(
                 "checker must preserve controlled missing-file contract: "
                 + required_missing_file_contract
+            )
+    for required_git_probe_contract in [
+        "def read_" + "indexed_mode(relative_path):",
+        'except OSError as error:\n        return "", f"git index probe could not '
+        + 'start: {error}"',
+        "if result.returncode != " + "0:",
+        'indexed_mode, index_probe_error = read_' + 'indexed_mode("gitfiti")',
+    ]:
+        if required_git_probe_contract not in checker_source:
+            failures.append(
+                "checker must preserve controlled git-probe contract: "
+                + required_git_probe_contract
             )
     for required_manifest_contract in [
         "parse_" + 'manifest("{")',
@@ -501,6 +526,29 @@ def main():
     ]:
         if evidence not in missing_file_verification:
             failures.append(f"missing required file verification must record {evidence}")
+    git_probe_plan = read(GIT_PROBE_PLAN)
+    git_probe_status = re.findall(r"(?mi)^status:\s*(.+?)\s*$", git_probe_plan)
+    git_probe_work = markdown_section(git_probe_plan, "Work Completed")
+    git_probe_verification = markdown_section(git_probe_plan, "Verification Completed")
+    if (git_probe_status != ["completed"] or not git_probe_work or
+            not git_probe_verification or re.search(
+                r"(?i)\b(?:pending|todo|tbd|not run|to be recorded)\b",
+                git_probe_verification,
+            )):
+        failures.append("git probe diagnostics plan must record completed work and verification")
+    for evidence in [
+        "status 1 with a named git-probe diagnostic and without a traceback",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "make lint",
+        "make test",
+        "make build",
+        "make check",
+        "external working directory",
+        "Six isolated hostile mutations",
+        "git diff --check",
+    ]:
+        if evidence not in git_probe_verification:
+            failures.append(f"git probe verification must record {evidence}")
     workflow_files = sorted(
         path.relative_to(ROOT).as_posix()
         for path in (ROOT / ".github/workflows").iterdir()
@@ -541,6 +589,7 @@ def main():
         "malformed artifact rows fail cleanly without traceback output",
         "malformed artifact manifests fail cleanly without traceback output",
         "missing required files fail cleanly without traceback output",
+        "Git index probe failures fail cleanly without traceback output",
     ]:
         if phrase not in docs:
             failures.append(f"repository guidance must mention {phrase}")
@@ -563,6 +612,14 @@ def main():
     ):
         failures.append(
             "all repository guidance must document controlled missing-file diagnostics"
+        )
+    if not all(
+        "git index probe failures fail cleanly without traceback output"
+        in document
+        for document in guidance_documents
+    ):
+        failures.append(
+            "all repository guidance must document controlled git-probe diagnostics"
         )
 
     gitignore = read(".gitignore")

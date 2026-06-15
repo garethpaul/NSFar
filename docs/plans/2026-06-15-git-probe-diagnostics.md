@@ -1,6 +1,6 @@
 # Git Probe Diagnostics
 
-status: planned
+status: completed
 
 ## Summary
 
@@ -48,3 +48,25 @@ Python traceback.
   probe deterministic and diagnosable.
 - The change must remain stacked on PR #8 and must not be merged or closed
   without explicit owner authorization.
+
+## Work Completed
+
+- Added a controlled `read_indexed_mode` boundary around the tracked-mode
+  subprocess probe while preserving the existing `100644` requirement.
+- Added a named startup/nonzero diagnostic and continued independent checks.
+- Added mutation-sensitive checker contracts and consistent repository
+  guidance without changing protected artifact or manifest bytes.
+
+## Verification Completed
+
+- An absolute Python interpreter with a `PATH` containing no `git` returned
+  status 1 with a named git-probe diagnostic and without a traceback.
+- `python3 -m py_compile scripts/check-baseline.py`, `make lint`, `make test`,
+  `make build`, and `make check` passed.
+- `make check` passed from an external working directory through the absolute
+  Makefile path.
+- Six isolated hostile mutations of the exception boundary, helper use,
+  nonzero-exit handling, guidance, protected hash, and static helper contract
+  were rejected.
+- `git diff --check`, generated-artifact inspection, and protected artifact and
+  manifest hash and tracked-mode checks passed.

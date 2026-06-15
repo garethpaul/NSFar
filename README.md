@@ -86,6 +86,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   checker continues independent artifact and repository diagnostics.
 - Missing required files fail cleanly without traceback output, preserving
   independent integrity and repository diagnostics for damaged checkouts.
+- Git index probe failures fail cleanly without traceback output, preserving
+  the protected artifact's tracked-mode diagnostic.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
