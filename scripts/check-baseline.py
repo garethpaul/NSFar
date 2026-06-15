@@ -46,6 +46,7 @@ MALFORMED_ARTIFACT_PLAN = "docs/plans/2026-06-14-malformed-artifact-diagnostics.
 MALFORMED_MANIFEST_PLAN = "docs/plans/2026-06-14-malformed-manifest-diagnostics.md"
 MISSING_REQUIRED_FILE_PLAN = "docs/plans/2026-06-15-missing-required-file-diagnostics.md"
 GIT_PROBE_PLAN = "docs/plans/2026-06-15-git-probe-diagnostics.md"
+UNREADABLE_ARTIFACT_PLAN = "docs/plans/2026-06-15-unreadable-artifact-diagnostics.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -79,6 +80,7 @@ REQUIRED = [
     MALFORMED_MANIFEST_PLAN,
     MISSING_REQUIRED_FILE_PLAN,
     GIT_PROBE_PLAN,
+    UNREADABLE_ARTIFACT_PLAN,
     "docs/artifact-provenance.md",
     "gitfiti",
     "scripts/check-baseline.py",
@@ -90,6 +92,13 @@ def read(relative_path):
         return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
     except OSError:
         return ""
+
+
+def read_artifact_bytes(path):
+    try:
+        return path.read_bytes(), None
+    except OSError as error:
+        return b"", f"protected artifact could not be read: {error}"
 
 
 def parse_artifact_values(lines):
@@ -192,7 +201,12 @@ def main():
             failures.append(f"required file missing: {path}")
 
     artifact_path = ROOT / "gitfiti"
-    artifact_bytes = artifact_path.read_bytes() if artifact_path.is_file() else b""
+    artifact_bytes = b""
+    artifact_read_error = None
+    if artifact_path.is_file():
+        artifact_bytes, artifact_read_error = read_artifact_bytes(artifact_path)
+    if artifact_read_error:
+        failures.append(f"gitfiti artifact read failed: {artifact_read_error}")
     if hashlib.sha256(artifact_bytes).hexdigest() != EXPECTED_SHA256:
         failures.append("gitfiti artifact checksum changed without a baseline update")
     indexed_mode, index_probe_error = read_indexed_mode("gitfiti")
@@ -238,7 +252,7 @@ def main():
     checker_source = read("scripts/check-baseline.py")
     for required_missing_file_contract in [
         'except OSError:\n        return ""',
-        'artifact_bytes = artifact_path.read_bytes() if artifact_path.is_file() else b""',
+        "if artifact_path.is_" + "file():",
         "except (ET.ParseError, OSError) as error:",
     ]:
         if required_missing_file_contract not in checker_source:
@@ -257,6 +271,20 @@ def main():
             failures.append(
                 "checker must preserve controlled git-probe contract: "
                 + required_git_probe_contract
+            )
+    for required_artifact_read_contract in [
+        "def read_" + "artifact_bytes(path):",
+        'except OSError as error:\n        return b"", f"protected artifact could not '
+        + 'be read: {error}"',
+        "artifact_bytes, artifact_read_error = read_"
+        + "artifact_bytes(artifact_path)",
+        'failures.append(f"gitfiti artifact read failed: '
+        + '{artifact_read_error}")',
+    ]:
+        if required_artifact_read_contract not in checker_source:
+            failures.append(
+                "checker must preserve controlled artifact-read contract: "
+                + required_artifact_read_contract
             )
     for required_manifest_contract in [
         "parse_" + 'manifest("{")',
@@ -549,6 +577,39 @@ def main():
     ]:
         if evidence not in git_probe_verification:
             failures.append(f"git probe verification must record {evidence}")
+    unreadable_artifact_plan = read(UNREADABLE_ARTIFACT_PLAN)
+    unreadable_artifact_status = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", unreadable_artifact_plan
+    )
+    unreadable_artifact_work = markdown_section(
+        unreadable_artifact_plan, "Work Completed"
+    )
+    unreadable_artifact_verification = markdown_section(
+        unreadable_artifact_plan, "Verification Completed"
+    )
+    unreadable_artifact_verification_normalized = " ".join(
+        unreadable_artifact_verification.split()
+    )
+    if (unreadable_artifact_status != ["completed"] or not unreadable_artifact_work or
+            not unreadable_artifact_verification or re.search(
+                r"(?i)\b(?:pending|todo|tbd|not run|to be recorded)\b",
+                unreadable_artifact_verification,
+            )):
+        failures.append("unreadable artifact diagnostics plan must record completed work and verification")
+    for evidence in [
+        "status 1 with a named artifact-read diagnostic and without a traceback",
+        "independent checksum and row findings",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "make lint",
+        "make test",
+        "make build",
+        "make check",
+        "external working directory",
+        "Six isolated hostile mutations",
+        "git diff --check",
+    ]:
+        if evidence not in unreadable_artifact_verification_normalized:
+            failures.append(f"unreadable artifact verification must record {evidence}")
     workflow_files = sorted(
         path.relative_to(ROOT).as_posix()
         for path in (ROOT / ".github/workflows").iterdir()
@@ -590,6 +651,7 @@ def main():
         "malformed artifact manifests fail cleanly without traceback output",
         "missing required files fail cleanly without traceback output",
         "Git index probe failures fail cleanly without traceback output",
+        "Unreadable protected artifacts fail cleanly without traceback output",
     ]:
         if phrase not in docs:
             failures.append(f"repository guidance must mention {phrase}")
@@ -620,6 +682,14 @@ def main():
     ):
         failures.append(
             "all repository guidance must document controlled git-probe diagnostics"
+        )
+    if not all(
+        "unreadable protected artifacts fail cleanly without traceback output"
+        in document
+        for document in guidance_documents
+    ):
+        failures.append(
+            "all repository guidance must document controlled artifact-read diagnostics"
         )
 
     gitignore = read(".gitignore")

@@ -51,6 +51,8 @@ Helpful reports include:
   checkouts cannot replace integrity findings with uncaught read errors.
 - Git index probe failures fail cleanly without traceback output so an
   unavailable Git executable cannot suppress independent integrity findings.
+- Unreadable protected artifacts fail cleanly without traceback output so
+  filesystem errors cannot suppress independent integrity findings.
 - The construction history in `docs/artifact-provenance.md` narrows the
   artifact's origin but does not identify a generator or authorize a guessed
   reconstruction. Preserve the checked artifact until stronger provenance is

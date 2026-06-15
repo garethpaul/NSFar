@@ -88,6 +88,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   independent integrity and repository diagnostics for damaged checkouts.
 - Git index probe failures fail cleanly without traceback output, preserving
   the protected artifact's tracked-mode diagnostic.
+- Unreadable protected artifacts fail cleanly without traceback output while
+  checksum, row, manifest, and independent repository diagnostics continue.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 

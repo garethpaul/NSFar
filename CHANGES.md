@@ -6,6 +6,8 @@
   independent artifact and repository diagnostics continue.
 - Made Git index probe failures fail cleanly without traceback output while
   tracked-mode and independent repository diagnostics continue.
+- Made unreadable protected artifacts fail cleanly without traceback output
+  while checksum, row, and independent repository diagnostics continue.
 
 ## 2026-06-14
 
