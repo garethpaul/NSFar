@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-15
+
+- Made missing required files fail cleanly without traceback output while
+  independent artifact and repository diagnostics continue.
+
 ## 2026-06-14
 
 - Made malformed artifact manifests fail cleanly without traceback output,

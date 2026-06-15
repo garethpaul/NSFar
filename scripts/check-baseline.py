@@ -44,6 +44,7 @@ PROVENANCE_PLAN = "docs/plans/2026-06-13-artifact-construction-provenance.md"
 LOCATION_INDEPENDENT_MAKE_PLAN = "docs/plans/2026-06-13-location-independent-make.md"
 MALFORMED_ARTIFACT_PLAN = "docs/plans/2026-06-14-malformed-artifact-diagnostics.md"
 MALFORMED_MANIFEST_PLAN = "docs/plans/2026-06-14-malformed-manifest-diagnostics.md"
+MISSING_REQUIRED_FILE_PLAN = "docs/plans/2026-06-15-missing-required-file-diagnostics.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -75,6 +76,7 @@ REQUIRED = [
     LOCATION_INDEPENDENT_MAKE_PLAN,
     MALFORMED_ARTIFACT_PLAN,
     MALFORMED_MANIFEST_PLAN,
+    MISSING_REQUIRED_FILE_PLAN,
     "docs/artifact-provenance.md",
     "gitfiti",
     "scripts/check-baseline.py",
@@ -82,7 +84,10 @@ REQUIRED = [
 
 
 def read(relative_path):
-    return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
+    try:
+        return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
 
 
 def parse_artifact_values(lines):
@@ -169,7 +174,7 @@ def main():
             failures.append(f"required file missing: {path}")
 
     artifact_path = ROOT / "gitfiti"
-    artifact_bytes = artifact_path.read_bytes()
+    artifact_bytes = artifact_path.read_bytes() if artifact_path.is_file() else b""
     if hashlib.sha256(artifact_bytes).hexdigest() != EXPECTED_SHA256:
         failures.append("gitfiti artifact checksum changed without a baseline update")
     indexed_artifact = subprocess.run(
@@ -218,6 +223,16 @@ def main():
     if sample_manifest != {"schemaVersion": 1} or sample_manifest_error is not None:
         failures.append("manifest parser must preserve valid JSON objects")
     checker_source = read("scripts/check-baseline.py")
+    for required_missing_file_contract in [
+        'except OSError:\n        return ""',
+        'artifact_bytes = artifact_path.read_bytes() if artifact_path.is_file() else b""',
+        "except (ET.ParseError, OSError) as error:",
+    ]:
+        if required_missing_file_contract not in checker_source:
+            failures.append(
+                "checker must preserve controlled missing-file contract: "
+                + required_missing_file_contract
+            )
     for required_manifest_contract in [
         "parse_" + 'manifest("{")',
         "parse_" + 'manifest("[]")',
@@ -464,6 +479,28 @@ def main():
     ]:
         if evidence not in malformed_manifest_verification:
             failures.append(f"malformed manifest verification must record {evidence}")
+    missing_file_plan = read(MISSING_REQUIRED_FILE_PLAN)
+    missing_file_status = re.findall(r"(?mi)^status:\s*(.+?)\s*$", missing_file_plan)
+    missing_file_verification = markdown_section(
+        missing_file_plan, "Verification Completed"
+    )
+    if (missing_file_status != ["completed"] or not missing_file_verification or
+            re.search(r"(?i)\b(?:pending|todo|tbd|not run|to be recorded)\b", missing_file_verification)):
+        failures.append("missing required file plan must record completed verification")
+    for evidence in [
+        "missing artifact, manifest, README, and SVG",
+        "status 1 without a traceback",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "make lint",
+        "make test",
+        "make build",
+        "make check",
+        "external working directory",
+        "Six isolated hostile mutations",
+        "git diff --check",
+    ]:
+        if evidence not in missing_file_verification:
+            failures.append(f"missing required file verification must record {evidence}")
     workflow_files = sorted(
         path.relative_to(ROOT).as_posix()
         for path in (ROOT / ".github/workflows").iterdir()
@@ -503,6 +540,7 @@ def main():
         "credential-free checkout",
         "malformed artifact rows fail cleanly without traceback output",
         "malformed artifact manifests fail cleanly without traceback output",
+        "missing required files fail cleanly without traceback output",
     ]:
         if phrase not in docs:
             failures.append(f"repository guidance must mention {phrase}")
@@ -517,6 +555,14 @@ def main():
     ):
         failures.append(
             "all repository guidance must document controlled malformed manifest diagnostics"
+        )
+    if not all(
+        "missing required files fail cleanly without traceback output"
+        in document
+        for document in guidance_documents
+    ):
+        failures.append(
+            "all repository guidance must document controlled missing-file diagnostics"
         )
 
     gitignore = read(".gitignore")
@@ -534,7 +580,7 @@ def main():
 
     try:
         ET.parse(ROOT / "docs/readme-overview.svg")
-    except ET.ParseError as error:
+    except (ET.ParseError, OSError) as error:
         failures.append(f"docs/readme-overview.svg must parse as XML: {error}")
 
     if failures:

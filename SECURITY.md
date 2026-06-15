@@ -47,6 +47,8 @@ Helpful reports include:
   output so a damaged archive cannot obscure the intended integrity diagnostics.
 - The checker ensures malformed artifact manifests fail cleanly without
   traceback output while independent artifact and repository checks continue.
+- Missing required files fail cleanly without traceback output so damaged
+  checkouts cannot replace integrity findings with uncaught read errors.
 - The construction history in `docs/artifact-provenance.md` narrows the
   artifact's origin but does not identify a generator or authorize a guessed
   reconstruction. Preserve the checked artifact until stronger provenance is

@@ -1,6 +1,6 @@
 # Missing Required File Diagnostics
 
-status: in progress
+status: completed
 
 ## Summary
 
@@ -51,4 +51,15 @@ traceback before the checker reports all independent repository findings.
 
 ## Verification Completed
 
-Pending implementation and validation.
+- Disposable reproductions with a missing artifact, manifest, README, and SVG
+  each returned status 1 without a traceback and named the missing path.
+- `python3 -m py_compile scripts/check-baseline.py`, `make lint`, `make test`,
+  `make build`, and `make check` passed.
+- `make check` passed from an external working directory through the absolute
+  Makefile path.
+- Six isolated hostile mutations of the text-read guard, artifact guard, SVG
+  guard, documentation, protected hashes, and completed-plan evidence were
+  rejected.
+- `git diff --check`, exact-diff, generated-artifact, conflict-marker,
+  intended-path, binary, large-file, changed-line credential, and protected
+  artifact/manifest hash and mode audits passed.
