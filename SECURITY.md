@@ -37,6 +37,8 @@ Helpful reports include:
   sequence shape and run-length histogram so structural drift remains visible
   without inferring it from raw rows. Schema version 1 requires an exact key
   set so unexpected manifest metadata is rejected.
+  Manifest value type closure also rejects boolean or floating-point
+  substitutions for documented integer fields, including nested metadata.
   `.gitattributes` pins the artifact and manifest to LF line endings so archive
   bytes do not drift silently across checkouts.
   Run `make lint`, `make test`, `make build`, and `make check` before changing

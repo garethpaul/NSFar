@@ -26,6 +26,8 @@ can be checked against the artifact line count, plus sequence shape and a
 run-length histogram for its zero-based ascending runs.
 The schema version 1 validator also requires the manifest's exact key set so
 undocumented metadata cannot accumulate silently.
+Manifest value type closure keeps every scalar and nested JSON type aligned
+with the schema version 1 evidence.
 
 The current focus is:
 
@@ -77,6 +79,7 @@ Contribution rules:
 - Preserve `.gitattributes` LF rules for archive artifacts.
 - Preserve the manifest value count total when changing archive metadata.
 - Preserve sequence-shape metadata when changing archive metadata.
+- Preserve manifest value type closure when changing archive metadata.
 - Run `make lint`, `make test`, `make build`, and `make check` before changing
   archive metadata.
 

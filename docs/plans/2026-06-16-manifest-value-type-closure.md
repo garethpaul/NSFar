@@ -1,6 +1,6 @@
 ---
 title: Manifest Value Type Closure
-status: planned
+status: completed
 date: 2026-06-16
 ---
 
@@ -61,3 +61,26 @@ nested histogram values are not constrained to their documented JSON types.
 - Every manifest field must match both the expected JSON value and exact JSON
   type, recursively through arrays and objects.
 - Valid schema version 1 evidence and all controlled diagnostics remain stable.
+
+## Work Completed
+
+- Added one recursive comparator that requires exact scalar and container types
+  before comparing values.
+- Applied strict comparison to the schema version and every derived manifest
+  value, including nested arrays and histograms.
+- Added focused comparator self-contracts, mutation-sensitive call-site
+  contracts, maintained guidance, and changelog evidence.
+
+## Verification Completed
+
+- A disposable initialized repository reproduced that `schemaVersion: true`
+  passed before strict comparison.
+- Boolean-for-integer, float-for-integer, and nested histogram float mutations
+  now return status 1 without a traceback.
+- All four Make gates passed from the repository root and an external directory.
+- Ten isolated hostile mutations were rejected across runtime type drift,
+  comparator behavior, both production call sites, guidance, changelog, and the
+  protected artifact hash.
+- Python checker compilation, exact diff, protected artifact and manifest hash
+  and mode, generated artifact, credential, conflict marker, binary, large-file,
+  mode, and whitespace audits passed.

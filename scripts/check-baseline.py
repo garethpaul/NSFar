@@ -47,6 +47,7 @@ MALFORMED_MANIFEST_PLAN = "docs/plans/2026-06-14-malformed-manifest-diagnostics.
 MISSING_REQUIRED_FILE_PLAN = "docs/plans/2026-06-15-missing-required-file-diagnostics.md"
 GIT_PROBE_PLAN = "docs/plans/2026-06-15-git-probe-diagnostics.md"
 UNREADABLE_ARTIFACT_PLAN = "docs/plans/2026-06-15-unreadable-artifact-diagnostics.md"
+MANIFEST_VALUE_TYPE_PLAN = "docs/plans/2026-06-16-manifest-value-type-closure.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -81,6 +82,7 @@ REQUIRED = [
     MISSING_REQUIRED_FILE_PLAN,
     GIT_PROBE_PLAN,
     UNREADABLE_ARTIFACT_PLAN,
+    MANIFEST_VALUE_TYPE_PLAN,
     "docs/artifact-provenance.md",
     "gitfiti",
     "scripts/check-baseline.py",
@@ -124,6 +126,21 @@ def parse_manifest(text):
     if not isinstance(manifest, dict):
         return None, "top-level JSON value must be an object"
     return manifest, None
+
+
+def same_json_value(actual, expected):
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        return actual.keys() == expected.keys() and all(
+            same_json_value(actual[key], value) for key, value in expected.items()
+        )
+    if isinstance(expected, list):
+        return len(actual) == len(expected) and all(
+            same_json_value(actual_value, expected_value)
+            for actual_value, expected_value in zip(actual, expected)
+        )
+    return actual == expected
 
 
 def read_indexed_mode(relative_path):
@@ -249,6 +266,11 @@ def main():
     sample_manifest, sample_manifest_error = parse_manifest('{"schemaVersion": 1}')
     if sample_manifest != {"schemaVersion": 1} or sample_manifest_error is not None:
         failures.append("manifest parser must preserve valid JSON objects")
+    if (same_json_value(True, 1) or same_json_value(1.0, 1) or
+            same_json_value([1, True], [1, 1]) or
+            same_json_value({"count": 1.0}, {"count": 1}) or
+            not same_json_value({"counts": [1, 2]}, {"counts": [1, 2]})):
+        failures.append("manifest value comparison must preserve exact recursive JSON types")
     checker_source = read("scripts/check-baseline.py")
     for required_missing_file_contract in [
         'except OSError:\n        return ""',
@@ -298,11 +320,23 @@ def main():
                 "checker must preserve safe manifest parsing contract: "
                 + required_manifest_contract
             )
+    for required_type_contract in [
+        "if type(actual) is not " + "type(expected):",
+        "same_json_" + "value(actual[key], value)",
+        "same_json_" + "value(actual_value, expected_value)",
+        'if not same_json_' + 'value(manifest.get("schemaVersion"), 1):',
+        "if not same_json_" + "value(manifest.get(key), expected):",
+    ]:
+        if required_type_contract not in checker_source:
+            failures.append(
+                "checker must preserve exact manifest value type contract: "
+                + required_type_contract
+            )
     manifest, manifest_error = parse_manifest(read(MANIFEST))
     if manifest_error:
         failures.append(f"artifact manifest must contain a valid JSON object: {manifest_error}")
         manifest = {}
-    if manifest.get("schemaVersion") != 1:
+    if not same_json_value(manifest.get("schemaVersion"), 1):
         failures.append("artifact manifest schemaVersion must be 1")
 
     expected_manifest = {
@@ -337,7 +371,7 @@ def main():
             + ", ".join(unexpected_manifest_keys)
         )
     for key, expected in expected_manifest.items():
-        if manifest.get(key) != expected:
+        if not same_json_value(manifest.get(key), expected):
             failures.append(f"artifact manifest {key} must match gitfiti")
 
     readme = read("README.md")
@@ -610,6 +644,17 @@ def main():
     ]:
         if evidence not in unreadable_artifact_verification_normalized:
             failures.append(f"unreadable artifact verification must record {evidence}")
+    manifest_type_plan = read(MANIFEST_VALUE_TYPE_PLAN)
+    manifest_type_status = re.findall(r"(?mi)^status:\s*(.+?)\s*$", manifest_type_plan)
+    manifest_type_verification = markdown_section(
+        manifest_type_plan, "Verification Completed"
+    )
+    if (manifest_type_status != ["completed"] or not manifest_type_verification or
+            "All four Make gates passed" not in manifest_type_verification or
+            "Ten isolated hostile mutations were rejected" not in manifest_type_verification or
+            "external directory" not in manifest_type_verification or
+            re.search(r"(?i)\b(?:pending|todo|tbd|not run|to be recorded)\b", manifest_type_verification)):
+        failures.append("manifest value type closure plan must record completed verification")
     workflow_files = sorted(
         path.relative_to(ROOT).as_posix()
         for path in (ROOT / ".github/workflows").iterdir()
@@ -690,6 +735,13 @@ def main():
     ):
         failures.append(
             "all repository guidance must document controlled artifact-read diagnostics"
+        )
+    if not all(
+        "manifest value type closure" in document
+        for document in guidance_documents
+    ):
+        failures.append(
+            "all repository guidance must document manifest value type closure"
         )
 
     gitignore = read(".gitignore")

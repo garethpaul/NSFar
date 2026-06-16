@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-16
+
+- Added manifest value type closure so boolean and floating-point substitutions
+  cannot satisfy integer schema fields or nested derived metadata.
+
 ## 2026-06-15
 
 - Made missing required files fail cleanly without traceback output while
