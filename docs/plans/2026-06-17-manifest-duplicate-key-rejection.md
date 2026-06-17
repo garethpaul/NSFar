@@ -1,6 +1,6 @@
 # Manifest Duplicate-Key Rejection
 
-Status: planned
+Status: completed
 
 ## Problem
 
@@ -58,6 +58,29 @@ rejection and record the actual completed verification.
   nested-object, guidance, and completed-plan requirements.
 - Audit the exact diff, generated artifacts, secret signatures, conflict
   markers, binaries, large files, modes, and whitespace before committing.
+
+## Work Completed
+
+- Added a recursive JSON object-pair hook that rejects a repeated key before
+  schema or artifact comparison and returns the duplicate key in a controlled
+  parser diagnostic.
+- Added top-level and nested duplicate-key self-checks plus static contracts
+  that protect parser installation, the rejection path, both probes, guidance,
+  and this completed plan evidence.
+- Synchronized the archive integrity guidance and changelog without changing
+  the protected artifact or manifest bytes.
+
+## Verification Completed
+
+- All four Make gates passed with the completed plan fixture and the exact
+  implementation content.
+- Seven isolated hostile mutations were rejected for the parser hook, duplicate
+  guard, rejection path, top-level probe, nested probe, guidance, and completed
+  plan status.
+- The absolute Makefile check passed from an external directory, and Python
+  bytecode compilation passed with its cache directed outside the checkout.
+- Focused duplicate top-level and nested object probes returned controlled
+  diagnostics naming `schemaVersion` and `0`, respectively.
 
 ## Risks
 

@@ -49,6 +49,8 @@ Helpful reports include:
   output so a damaged archive cannot obscure the intended integrity diagnostics.
 - The checker ensures malformed artifact manifests fail cleanly without
   traceback output while independent artifact and repository checks continue.
+- Manifest duplicate-key rejection applies recursively so permissive JSON
+  overwrite behavior cannot hide ambiguous archive metadata.
 - Missing required files fail cleanly without traceback output so damaged
   checkouts cannot replace integrity findings with uncaught read errors.
 - Git index probe failures fail cleanly without traceback output so an

@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-17
+
+- Added manifest duplicate-key rejection at every JSON object depth so
+  ambiguous metadata cannot pass exact schema and value validation.
+
 ## 2026-06-16
 
 - Added manifest value type closure so boolean and floating-point substitutions

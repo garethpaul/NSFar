@@ -48,6 +48,7 @@ MISSING_REQUIRED_FILE_PLAN = "docs/plans/2026-06-15-missing-required-file-diagno
 GIT_PROBE_PLAN = "docs/plans/2026-06-15-git-probe-diagnostics.md"
 UNREADABLE_ARTIFACT_PLAN = "docs/plans/2026-06-15-unreadable-artifact-diagnostics.md"
 MANIFEST_VALUE_TYPE_PLAN = "docs/plans/2026-06-16-manifest-value-type-closure.md"
+MANIFEST_DUPLICATE_KEY_PLAN = "docs/plans/2026-06-17-manifest-duplicate-key-rejection.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -83,6 +84,7 @@ REQUIRED = [
     GIT_PROBE_PLAN,
     UNREADABLE_ARTIFACT_PLAN,
     MANIFEST_VALUE_TYPE_PLAN,
+    MANIFEST_DUPLICATE_KEY_PLAN,
     "docs/artifact-provenance.md",
     "gitfiti",
     "scripts/check-baseline.py",
@@ -118,9 +120,18 @@ def parse_artifact_values(lines):
     return (None, invalid) if invalid else (values, [])
 
 
+def reject_duplicate_object_pairs(pairs):
+    parsed = {}
+    for key, value in pairs:
+        if key in parsed:
+            raise ValueError(f"duplicate object key: {key}")
+        parsed[key] = value
+    return parsed
+
+
 def parse_manifest(text):
     try:
-        manifest = json.loads(text)
+        manifest = json.loads(text, object_pairs_hook=reject_duplicate_object_pairs)
     except (TypeError, ValueError) as error:
         return None, str(error)
     if not isinstance(manifest, dict):
@@ -266,6 +277,16 @@ def main():
     sample_manifest, sample_manifest_error = parse_manifest('{"schemaVersion": 1}')
     if sample_manifest != {"schemaVersion": 1} or sample_manifest_error is not None:
         failures.append("manifest parser must preserve valid JSON objects")
+    duplicate_manifest, duplicate_manifest_error = parse_manifest(
+        '{"schemaVersion": 0, "schemaVersion": 1}'
+    )
+    if duplicate_manifest is not None or duplicate_manifest_error != "duplicate object key: schemaVersion":
+        failures.append("manifest parser must reject duplicate top-level object keys")
+    nested_duplicate_manifest, nested_duplicate_manifest_error = parse_manifest(
+        '{"valueCounts": {"0": 1, "0": 318}}'
+    )
+    if nested_duplicate_manifest is not None or nested_duplicate_manifest_error != "duplicate object key: 0":
+        failures.append("manifest parser must reject duplicate nested object keys")
     if (same_json_value(True, 1) or same_json_value(1.0, 1) or
             same_json_value([1, True], [1, 1]) or
             same_json_value({"count": 1.0}, {"count": 1}) or
@@ -311,6 +332,10 @@ def main():
     for required_manifest_contract in [
         "parse_" + 'manifest("{")',
         "parse_" + 'manifest("[]")',
+        "object_pairs_hook=" + "reject_duplicate_object_pairs",
+        'raise ValueError(f"duplicate object key: {key}")',
+        'duplicate_manifest_error != "duplicate object key: schemaVersion"',
+        'nested_duplicate_manifest_error != "duplicate object key: 0"',
         "isinstance(manifest, " + "dict)",
         "manifest, manifest_error = " + "parse_manifest(read(MANIFEST))",
         "manifest = " + "{}",
@@ -655,6 +680,22 @@ def main():
             "external directory" not in manifest_type_verification or
             re.search(r"(?i)\b(?:pending|todo|tbd|not run|to be recorded)\b", manifest_type_verification)):
         failures.append("manifest value type closure plan must record completed verification")
+    duplicate_key_plan = read(MANIFEST_DUPLICATE_KEY_PLAN)
+    duplicate_key_verification = markdown_section(
+        duplicate_key_plan, "Verification Completed"
+    )
+    if not (
+        "status: completed" in duplicate_key_plan.lower()
+        and "All four Make gates passed" in duplicate_key_verification
+        and "Seven isolated hostile mutations were rejected" in duplicate_key_verification
+        and "external directory" in duplicate_key_verification
+        and "duplicate" in duplicate_key_verification.lower()
+        and not re.search(
+            r"(?i)\b(?:pending|todo|tbd|not run|to be recorded)\b",
+            duplicate_key_verification,
+        )
+    ):
+        failures.append("manifest duplicate-key rejection plan must record completed verification")
     workflow_files = sorted(
         path.relative_to(ROOT).as_posix()
         for path in (ROOT / ".github/workflows").iterdir()
@@ -742,6 +783,13 @@ def main():
     ):
         failures.append(
             "all repository guidance must document manifest value type closure"
+        )
+    if not all(
+        "manifest duplicate-key rejection" in document
+        for document in guidance_documents
+    ):
+        failures.append(
+            "all repository guidance must document manifest duplicate-key rejection"
         )
 
     gitignore = read(".gitignore")

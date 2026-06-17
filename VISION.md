@@ -80,6 +80,7 @@ Contribution rules:
 - Preserve the manifest value count total when changing archive metadata.
 - Preserve sequence-shape metadata when changing archive metadata.
 - Preserve manifest value type closure when changing archive metadata.
+- Preserve manifest duplicate-key rejection when changing archive metadata.
 - Run `make lint`, `make test`, `make build`, and `make check` before changing
   archive metadata.
 

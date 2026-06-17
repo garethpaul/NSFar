@@ -120,6 +120,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   only through a deliberate schema and validator update.
 - Preserve manifest value type closure so booleans and floating-point values
   cannot stand in for documented integers.
+- Preserve manifest duplicate-key rejection so ambiguous top-level and nested
+  JSON objects cannot pass exact schema and value checks.
 - Keep the artifact file mode non-executable unless provenance explains why it
   should change.
 - Keep `.gitattributes` line-ending rules in place for byte-sensitive archive
