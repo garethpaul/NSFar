@@ -19,13 +19,14 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 - `VISION.md` - project direction and maintenance guardrails
 - `gitfiti` - preserved 2,889-line numeric artifact with values from 0 through 17
 - `scripts/check-baseline.py` - archive/artifact baseline checks
+- `scripts/test-check-baseline.py` - hostile parser, Git, and workflow fixtures
 
 Additional scan context:
 
 - Source directories: no top-level source directories detected
 - Dependency and build manifests: none detected
 - Entry points or build surfaces: `gitfiti`
-- Test-looking files: `scripts/check-baseline.py`
+- Test-looking files: `scripts/check-baseline.py`, `scripts/test-check-baseline.py`
 
 ## Getting Started
 
@@ -51,12 +52,18 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - There is no installable runtime in the current repository.
 - Treat `gitfiti` as a preserved numeric artifact until provenance or
   regeneration notes are added.
+- [`docs/artifact-provenance.md`](docs/artifact-provenance.md) records that the
+  file was built by 2,889 one-line-addition commits while leaving the generator,
+  source instructions, and intended rendered pattern explicitly unresolved.
 - `docs/artifact-manifest.json` records the artifact path, byte size, line
   count, value range, value counts, encoding, format, line ending, terminal
   newline state, file mode, distinct values, sequence boundary values, value
   count total, and checksum.
 - The artifact manifest uses schema version 1 so future metadata changes are
-  explicit.
+  explicit. Validation requires its exact key set, so misspelled, obsolete, or
+  undocumented fields cannot silently extend the archive contract.
+- Manifest value type closure requires every scalar and nested value to retain
+  its exact JSON type as well as its derived value.
 - The artifact is preserved as a non-executable `100644` file mode.
 - `.gitattributes` pins the `gitfiti` artifact and manifest to LF line endings
   so byte-sensitive archive files do not drift across checkouts.
@@ -69,9 +76,27 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make test`
 - `make build`
 - `make check`
+- The Make gates are location-independent. From another directory, pass the
+  checkout's Makefile by absolute path, such as
+  `make -f /path/to/NSFar/Makefile check`.
 - `python3 scripts/check-baseline.py`
+- `python3 scripts/test-check-baseline.py`
 - Pinned `ubuntu-24.04` GitHub Actions runs the same byte-sensitive artifact and
-  manifest integrity checks on Python 3.12.
+  manifest integrity checks on Python 3.12. The checkout credentials are not
+  persisted after source retrieval.
+- Malformed artifact rows fail cleanly without traceback output, so integrity
+  diagnostics remain visible instead of being replaced by parser exceptions.
+- Malformed artifact manifests fail cleanly without traceback output, and the
+  checker continues independent artifact and repository diagnostics.
+- Missing required files fail cleanly without traceback output, preserving
+  independent integrity and repository diagnostics for damaged checkouts.
+- Git index probe failures fail cleanly without traceback output, preserving
+  the protected artifact's tracked-mode diagnostic. Malformed, undecodable, or
+  unmerged-stage probe output is rejected rather than treated as a normal file.
+- Unreadable protected artifacts fail cleanly without traceback output while
+  checksum, row, manifest, and independent repository diagnostics continue.
+- Checkout validation requires one pinned checkout step, one `with` mapping,
+  and exactly one `persist-credentials: false` input.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -84,6 +109,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - The scan did not identify production authentication, payment, or secret-management code. Treat future additions in those areas as security-sensitive.
 - Do not rewrite the `gitfiti` numeric artifact without a reproducible source or
   documented provenance.
+- Construction history is not a reproduction recipe; do not regenerate the
+  artifact from a guessed tool, image, or interpretation.
 - Keep the artifact manifest aligned with the checked-in artifact whenever
   archive metadata changes.
 - Keep artifact distinct values documented in the manifest so the observed
@@ -94,6 +121,12 @@ When the required SDK or runtime is unavailable, use static checks and source re
   value-count histogram.
 - Keep the manifest sequence shape aligned with the artifact's 318 zero-based
   ascending runs and checked run-length histogram.
+- Keep the schema version 1 manifest on its exact key set; add or remove fields
+  only through a deliberate schema and validator update.
+- Preserve manifest value type closure so booleans and floating-point values
+  cannot stand in for documented integers.
+- Preserve manifest duplicate-key rejection so ambiguous top-level and nested
+  JSON objects cannot pass exact schema and value checks.
 - Keep the artifact file mode non-executable unless provenance explains why it
   should change.
 - Keep `.gitattributes` line-ending rules in place for byte-sensitive archive
@@ -103,6 +136,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 - Run `make lint`, `make test`, `make build`, and `make check` before changing
   the artifact or archive metadata.
+- Use an absolute Makefile path when running those gates outside the checkout.
 - See `docs/plans/2026-06-09-make-gate-aliases.md` for the local verification
   gate aliases.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.

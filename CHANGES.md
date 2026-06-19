@@ -1,5 +1,55 @@
 # Changes
 
+## 2026-06-19
+
+- Added checked-in hostile regression tests for malformed manifest nesting,
+  malformed or undecodable Git index output, missing workflow directories, and
+  duplicate checkout mappings.
+- Tightened checkout validation so duplicate YAML `with` mappings cannot hide
+  the credential-free checkout input from the effective workflow structure.
+- Made excessive JSON nesting and malformed Git index records fail with
+  controlled diagnostics instead of tracebacks or ambiguous tracked modes.
+
+## 2026-06-17
+
+- Added manifest duplicate-key rejection at every JSON object depth so
+  ambiguous metadata cannot pass exact schema and value validation.
+
+## 2026-06-16
+
+- Added manifest value type closure so boolean and floating-point substitutions
+  cannot satisfy integer schema fields or nested derived metadata.
+
+## 2026-06-15
+
+- Made missing required files fail cleanly without traceback output while
+  independent artifact and repository diagnostics continue.
+- Made Git index probe failures fail cleanly without traceback output while
+  tracked-mode and independent repository diagnostics continue.
+- Made unreadable protected artifacts fail cleanly without traceback output
+  while checksum, row, and independent repository diagnostics continue.
+
+## 2026-06-14
+
+- Made malformed artifact manifests fail cleanly without traceback output,
+  including non-object JSON, while independent checker findings continue.
+- Made malformed or out-of-range artifact rows return controlled integrity
+  diagnostics instead of crashing the checker during integer conversion.
+
+## 2026-06-13
+
+- Made every dependency-free Make alias resolve the static checker from the
+  checkout when the Makefile is invoked by absolute path.
+- Documented that 2,889 one-line-addition commits constructed the preserved
+  artifact while leaving its generator and intended rendered pattern unresolved.
+
+## 2026-06-12
+
+- Disabled persisted checkout credentials and enforced the sole pinned
+  credential-free workflow boundary.
+- Closed the schema version 1 artifact manifest to its exact top-level key set
+  so missing, misspelled, obsolete, or undocumented fields fail validation.
+
 ## 2026-06-10
 
 - Added pinned, read-only Python 3.12 hosted validation for artifact and

@@ -35,13 +35,38 @@ Helpful reports include:
   newline metadata explicit. It also records the non-executable file mode and
   distinct values, boundary values, and value count total. It also records the
   sequence shape and run-length histogram so structural drift remains visible
-  without inferring it from raw rows.
+  without inferring it from raw rows. Schema version 1 requires an exact key
+  set so unexpected manifest metadata is rejected.
+  Manifest value type closure also rejects boolean or floating-point
+  substitutions for documented integer fields, including nested metadata.
   `.gitattributes` pins the artifact and manifest to LF line endings so archive
   bytes do not drift silently across checkouts.
   Run `make lint`, `make test`, `make build`, and `make check` before changing
   it or related archive metadata.
 - The pinned Linux workflow continuously verifies artifact bytes, mode, line
   endings, checksum, and synchronized manifest metadata.
+- The checker ensures malformed artifact rows fail cleanly without traceback
+  output so a damaged archive cannot obscure the intended integrity diagnostics.
+- The checker ensures malformed artifact manifests fail cleanly without
+  traceback output while independent artifact and repository checks continue.
+- Manifest duplicate-key rejection applies recursively so permissive JSON
+  overwrite behavior cannot hide ambiguous archive metadata.
+- Missing required files fail cleanly without traceback output so damaged
+  checkouts cannot replace integrity findings with uncaught read errors.
+- Git index probe failures fail cleanly without traceback output so an
+  unavailable Git executable cannot suppress independent integrity findings.
+- Malformed, undecodable, or unresolved-stage Git index records are rejected
+  instead of being interpreted as the protected artifact's tracked mode.
+- Unreadable protected artifacts fail cleanly without traceback output so
+  filesystem errors cannot suppress independent integrity findings.
+- The construction history in `docs/artifact-provenance.md` narrows the
+  artifact's origin but does not identify a generator or authorize a guessed
+  reconstruction. Preserve the checked artifact until stronger provenance is
+  independently verifiable.
+- The hosted gate uses a credential-free checkout so the read-only workflow
+  token is not retained in the runner's Git configuration.
+- The checker rejects duplicate checkout `with` mappings and requires exactly
+  one `persist-credentials: false` input on the pinned checkout step.
 
 
 ## Dependency and Supply Chain Security
