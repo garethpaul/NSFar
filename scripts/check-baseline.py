@@ -19,9 +19,12 @@ PYTHON ?= python3
 
 check: verify
 
-verify: static-check
+verify: static-check test
 
-lint test build: static-check
+lint build: static-check
+
+test:
+\tPYTHONDONTWRITEBYTECODE=1 $(PYTHON) "$(ROOT)/scripts/test-check-baseline.py"
 
 static-check:
 \tPYTHONDONTWRITEBYTECODE=1 $(PYTHON) "$(ROOT)/scripts/check-baseline.py"
@@ -52,10 +55,12 @@ MANIFEST_DUPLICATE_KEY_PLAN = "docs/plans/2026-06-17-manifest-duplicate-key-reje
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
+    ".github/CODEOWNERS",
     ".github/workflows/check.yml",
     ".gitattributes",
     ".gitignore",
     "CHANGES.md",
+    "AGENTS.md",
     "Makefile",
     "README.md",
     "SECURITY.md",
@@ -88,6 +93,7 @@ REQUIRED = [
     "docs/artifact-provenance.md",
     "gitfiti",
     "scripts/check-baseline.py",
+    "scripts/test-check-baseline.py",
 ]
 
 
@@ -129,9 +135,37 @@ def reject_duplicate_object_pairs(pairs):
     return parsed
 
 
+def exceeds_json_nesting_limit(text, maximum_depth=100):
+    depth = 0
+    in_string = False
+    escaped = False
+    for character in text:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                in_string = False
+            continue
+        if character == '"':
+            in_string = True
+        elif character in "[{":
+            depth += 1
+            if depth > maximum_depth:
+                return True
+        elif character in "]}":
+            depth -= 1
+    return False
+
+
 def parse_manifest(text):
+    if exceeds_json_nesting_limit(text):
+        return None, "maximum JSON nesting depth exceeded"
     try:
         manifest = json.loads(text, object_pairs_hook=reject_duplicate_object_pairs)
+    except RecursionError:
+        return None, "maximum JSON nesting depth exceeded"
     except (TypeError, ValueError) as error:
         return None, str(error)
     if not isinstance(manifest, dict):
@@ -163,11 +197,68 @@ def read_indexed_mode(relative_path):
             capture_output=True,
             text=True,
         )
+    except UnicodeError:
+        return "", "git index probe returned undecodable output"
     except OSError as error:
         return "", f"git index probe could not start: {error}"
     if result.returncode != 0:
         return "", f"git index probe exited with status {result.returncode}"
-    return result.stdout.split(maxsplit=1)[0] if result.stdout else "", None
+    match = re.fullmatch(
+        r"(?P<mode>[0-7]{6}) [0-9a-fA-F]{40,64} 0\t[^\r\n]+\n?",
+        result.stdout,
+    )
+    if not match:
+        return "", "git index probe returned malformed output"
+    return match.group("mode"), None
+
+
+def read_workflow_files():
+    workflow_directory = ROOT / ".github/workflows"
+    try:
+        files = sorted(
+            path.relative_to(ROOT).as_posix()
+            for path in workflow_directory.iterdir()
+            if path.is_file()
+        )
+    except OSError as error:
+        return [], f"workflow inventory could not be read: {error}"
+    return files, None
+
+
+def checkout_workflow_failures(workflow):
+    failures = []
+    lines = workflow.splitlines()
+    checkout_pattern = re.compile(r"^(?P<indent>\s*)-\s+uses:\s+actions/checkout@(?P<ref>\S+)\s*$")
+    checkout_steps = []
+    for index, line in enumerate(lines):
+        match = checkout_pattern.fullmatch(line)
+        if match:
+            checkout_steps.append((index, len(match.group("indent")), match.group("ref")))
+
+    expected_ref = "df4cb1c069e1874edd31b4311f1884172cec0e10"
+    if len(checkout_steps) != 1 or checkout_steps[0][2] != expected_ref:
+        return ["Check workflow must keep one pinned credential-free checkout step"]
+
+    start, step_indent, _ = checkout_steps[0]
+    end = len(lines)
+    for index in range(start + 1, len(lines)):
+        line = lines[index]
+        if line.strip() and len(line) - len(line.lstrip()) <= step_indent:
+            end = index
+            break
+    step_lines = lines[start + 1:end]
+    expected_with = " " * (step_indent + 2) + "with:"
+    expected_credentials = (
+        " " * (step_indent + 4) + "persist-credentials: false"
+    )
+    if step_lines.count(expected_with) != 1:
+        failures.append("checkout step must contain exactly one with mapping")
+        return failures
+    if step_lines != [expected_with, expected_credentials]:
+        failures.append(
+            "checkout step must contain only the credential-free with mapping"
+        )
+    return failures
 
 
 def build_value_manifest(values, failures):
@@ -487,8 +578,7 @@ def main():
     distinct_values_plan = read(DISTINCT_VALUES_PLAN)
     if "status: completed" not in distinct_values_plan or "distinctValues" not in distinct_values_plan:
         failures.append("distinct values plan must record completed status and verification")
-    make_gate_plan_path = ROOT / MAKE_GATE_PLAN
-    make_gate_plan = make_gate_plan_path.read_text(encoding="utf-8") if make_gate_plan_path.exists() else ""
+    make_gate_plan = read(MAKE_GATE_PLAN)
     if "status: completed" not in make_gate_plan or "make lint" not in make_gate_plan or "make build" not in make_gate_plan:
         failures.append("make gate alias plan must record completed status and verification")
     boundary_values_plan = read(BOUNDARY_VALUES_PLAN)
@@ -696,22 +786,12 @@ def main():
         )
     ):
         failures.append("manifest duplicate-key rejection plan must record completed verification")
-    workflow_files = sorted(
-        path.relative_to(ROOT).as_posix()
-        for path in (ROOT / ".github/workflows").iterdir()
-        if path.is_file()
-    )
+    workflow_files, workflow_inventory_error = read_workflow_files()
+    if workflow_inventory_error:
+        failures.append(workflow_inventory_error)
     if workflow_files != [".github/workflows/check.yml"]:
         failures.append("workflow inventory must contain only .github/workflows/check.yml")
-    checkout_step = (
-        "      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10\n"
-        "        with:\n"
-        "          persist-credentials: false"
-    )
-    if workflow.count("actions/checkout@") != 1 or checkout_step not in workflow:
-        failures.append("Check workflow must keep one pinned credential-free checkout step")
-    if "persist-credentials: true" in workflow:
-        failures.append("Check workflow must not persist checkout credentials")
+    failures.extend(checkout_workflow_failures(workflow))
     for expected in [
         "permissions:\n  contents: read",
         "cancel-in-progress: true",

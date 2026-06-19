@@ -55,6 +55,8 @@ Helpful reports include:
   checkouts cannot replace integrity findings with uncaught read errors.
 - Git index probe failures fail cleanly without traceback output so an
   unavailable Git executable cannot suppress independent integrity findings.
+- Malformed, undecodable, or unresolved-stage Git index records are rejected
+  instead of being interpreted as the protected artifact's tracked mode.
 - Unreadable protected artifacts fail cleanly without traceback output so
   filesystem errors cannot suppress independent integrity findings.
 - The construction history in `docs/artifact-provenance.md` narrows the
@@ -63,6 +65,8 @@ Helpful reports include:
   independently verifiable.
 - The hosted gate uses a credential-free checkout so the read-only workflow
   token is not retained in the runner's Git configuration.
+- The checker rejects duplicate checkout `with` mappings and requires exactly
+  one `persist-credentials: false` input on the pinned checkout step.
 
 
 ## Dependency and Supply Chain Security

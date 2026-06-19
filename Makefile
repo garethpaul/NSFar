@@ -6,9 +6,12 @@ PYTHON ?= python3
 
 check: verify
 
-verify: static-check
+verify: static-check test
 
-lint test build: static-check
+lint build: static-check
+
+test:
+	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) "$(ROOT)/scripts/test-check-baseline.py"
 
 static-check:
 	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) "$(ROOT)/scripts/check-baseline.py"

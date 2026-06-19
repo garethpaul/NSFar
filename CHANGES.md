@@ -1,5 +1,15 @@
 # Changes
 
+## 2026-06-19
+
+- Added checked-in hostile regression tests for malformed manifest nesting,
+  malformed or undecodable Git index output, missing workflow directories, and
+  duplicate checkout mappings.
+- Tightened checkout validation so duplicate YAML `with` mappings cannot hide
+  the credential-free checkout input from the effective workflow structure.
+- Made excessive JSON nesting and malformed Git index records fail with
+  controlled diagnostics instead of tracebacks or ambiguous tracked modes.
+
 ## 2026-06-17
 
 - Added manifest duplicate-key rejection at every JSON object depth so

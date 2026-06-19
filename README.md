@@ -19,13 +19,14 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 - `VISION.md` - project direction and maintenance guardrails
 - `gitfiti` - preserved 2,889-line numeric artifact with values from 0 through 17
 - `scripts/check-baseline.py` - archive/artifact baseline checks
+- `scripts/test-check-baseline.py` - hostile parser, Git, and workflow fixtures
 
 Additional scan context:
 
 - Source directories: no top-level source directories detected
 - Dependency and build manifests: none detected
 - Entry points or build surfaces: `gitfiti`
-- Test-looking files: `scripts/check-baseline.py`
+- Test-looking files: `scripts/check-baseline.py`, `scripts/test-check-baseline.py`
 
 ## Getting Started
 
@@ -79,6 +80,7 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   checkout's Makefile by absolute path, such as
   `make -f /path/to/NSFar/Makefile check`.
 - `python3 scripts/check-baseline.py`
+- `python3 scripts/test-check-baseline.py`
 - Pinned `ubuntu-24.04` GitHub Actions runs the same byte-sensitive artifact and
   manifest integrity checks on Python 3.12. The checkout credentials are not
   persisted after source retrieval.
@@ -89,9 +91,12 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - Missing required files fail cleanly without traceback output, preserving
   independent integrity and repository diagnostics for damaged checkouts.
 - Git index probe failures fail cleanly without traceback output, preserving
-  the protected artifact's tracked-mode diagnostic.
+  the protected artifact's tracked-mode diagnostic. Malformed, undecodable, or
+  unmerged-stage probe output is rejected rather than treated as a normal file.
 - Unreadable protected artifacts fail cleanly without traceback output while
   checksum, row, manifest, and independent repository diagnostics continue.
+- Checkout validation requires one pinned checkout step, one `with` mapping,
+  and exactly one `persist-credentials: false` input.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
