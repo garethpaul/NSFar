@@ -11,11 +11,22 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_MAKEFILE = """override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+EXPECTED_MAKEFILE = """override SHELL := /bin/sh
+override .SHELLFLAGS := -c
+ifneq ($(strip $(MAKEFILES)),)
+$(error MAKEFILES must not be set)
+endif
+override MAKEFILES :=
+ifneq ($(origin MAKEFILE_LIST),file)
+$(error MAKEFILE_LIST must not be overridden)
+endif
+override ROOT := $(shell MAKEFILE_LIST_RAW='$(subst ','"'"',$(MAKEFILE_LIST))' python3 -c "import os; raw = os.environ['MAKEFILE_LIST_RAW']; candidates = [raw] + [raw[index + 1:] for index, char in enumerate(raw) if char == ' ']; path = next((candidate for candidate in candidates if (candidate == 'Makefile' or candidate.endswith('/Makefile')) and os.path.isfile(os.path.abspath(candidate))), None); assert path is not None, 'trusted Makefile path not found'; print(os.path.dirname(os.path.abspath(path)))")
 
 .PHONY: build check lint static-check test verify
 
-PYTHON ?= python3
+override PYTHON := python3
+build check lint static-check test verify: override ROOT := $(ROOT)
+build check lint static-check test verify: override PYTHON := $(PYTHON)
 
 check: verify
 

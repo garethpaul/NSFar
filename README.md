@@ -76,9 +76,13 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make test`
 - `make build`
 - `make check`
-- The Make gates are location-independent. From another directory, pass the
-  checkout's Makefile by absolute path, such as
+- The Make gates are location-independent, including checkout paths containing
+  spaces or apostrophes. From another directory, pass the checkout's Makefile
+  by absolute path, such as
   `make -f /path/to/NSFar/Makefile check`.
+- Command-line or environment `ROOT` values cannot redirect verification, and
+  `MAKEFILE_LIST` overrides or `MAKEFILES` preloads fail before artifact
+  verification runs. Public targets freeze the shell and Python verifier.
 - `python3 scripts/check-baseline.py`
 - `python3 scripts/test-check-baseline.py`
 - Pinned `ubuntu-24.04` GitHub Actions runs the same byte-sensitive artifact and

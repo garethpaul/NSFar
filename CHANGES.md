@@ -1,5 +1,15 @@
 # Changes
 
+## 2026-06-21
+
+- Made absolute Makefile artifact verification safe for spaces and apostrophes
+  and rejected `MAKEFILE_LIST` injection.
+- Expanded the hostile suite to ten tests covering all six Make aliases, root
+  overrides, and command-line or environment `MAKEFILE_LIST` injection.
+- Rejected `MAKEFILES` preloads, froze the artifact verifier interpreter and
+  shell, and preserved relative trusted Makefiles after inert earlier `-f`
+  inputs.
+
 ## 2026-06-19
 
 - Added checked-in hostile regression tests for malformed manifest nesting,
