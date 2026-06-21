@@ -4,7 +4,8 @@
 
 - Made absolute Makefile artifact verification safe for spaces and apostrophes
   and rejected `MAKEFILE_LIST` injection.
-- Added non-mutating root-policy coverage to the hostile regression suite.
+- Expanded the hostile suite to ten tests covering all six Make aliases, root
+  overrides, and command-line or environment `MAKEFILE_LIST` injection.
 
 ## 2026-06-19
 

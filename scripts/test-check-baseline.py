@@ -18,34 +18,48 @@ CHECKER_PATH = ROOT / "scripts/check-baseline.py"
 
 
 class MakefileRootTests(unittest.TestCase):
-    def test_absolute_makefile_path_with_spaces_and_apostrophe(self):
+    def run_make(self, *arguments, environment=None):
         with tempfile.TemporaryDirectory(prefix="NSFar's gate ") as directory:
             checkout = Path(directory)
             makefile = checkout / "Makefile"
             makefile.write_text(
                 (ROOT / "Makefile").read_text(encoding="utf-8"), encoding="utf-8"
             )
-            result = subprocess.run(
-                ["make", "-n", "-f", str(makefile), "static-check"],
+            env = {"PATH": os.environ.get("PATH", "")}
+            if environment:
+                env.update(environment)
+            return subprocess.run(
+                ["make", "--no-print-directory", "-n", "-f", str(makefile), *arguments],
                 cwd=checkout.parent,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
                 check=False,
-                env={"PATH": os.environ.get("PATH", "")},
+                env=env,
             )
-            self.assertEqual(result.returncode, 0, result.stdout)
-            self.assertNotIn('python3 " ', result.stdout)
-            self.assertIn(str(checkout / "scripts" / "check-baseline.py"), result.stdout)
+
+    def test_all_aliases_preserve_spaced_absolute_makefile_path(self):
+        for target in ("check", "lint", "static-check", "test", "build", "verify"):
+            for name, arguments, environment in (
+                ("none", (target,), None),
+                ("command", (target, "ROOT=/tmp/attacker-root"), None),
+                ("environment", (target,), {"ROOT": "/tmp/attacker-root"}),
+            ):
+                with self.subTest(target=target, override=name):
+                    result = self.run_make(*arguments, environment=environment)
+                    self.assertEqual(result.returncode, 0, result.stdout)
+                    self.assertNotIn('python3 " ', result.stdout)
+                    self.assertNotIn("/tmp/attacker-root", result.stdout)
+                    self.assertIn("NSFar's gate ", result.stdout)
 
     def test_makefile_list_override_fails_closed(self):
-        result = subprocess.run(
-            ["make", "-n", "-f", str(ROOT / "Makefile"), "MAKEFILE_LIST=/tmp/untrusted", "check"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            check=False,
-            env={"PATH": os.environ.get("PATH", "")},
+        result = self.run_make("check", "MAKEFILE_LIST=/tmp/untrusted")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("MAKEFILE_LIST must not be overridden", result.stdout)
+
+    def test_environment_makefile_list_override_fails_closed(self):
+        result = self.run_make(
+            "-e", "check", environment={"MAKEFILE_LIST": "/tmp/untrusted"}
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("MAKEFILE_LIST must not be overridden", result.stdout)

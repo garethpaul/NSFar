@@ -80,7 +80,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   spaces or apostrophes. From another directory, pass the checkout's Makefile
   by absolute path, such as
   `make -f /path/to/NSFar/Makefile check`.
-- `MAKEFILE_LIST` overrides fail before artifact verification runs.
+- Command-line or environment `ROOT` values cannot redirect verification, and
+  `MAKEFILE_LIST` overrides fail before artifact verification runs.
 - `python3 scripts/check-baseline.py`
 - `python3 scripts/test-check-baseline.py`
 - Pinned `ubuntu-24.04` GitHub Actions runs the same byte-sensitive artifact and
