@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-21
+
+- Made absolute Makefile artifact verification safe for spaces and apostrophes
+  and rejected `MAKEFILE_LIST` injection.
+- Added non-mutating root-policy coverage to the hostile regression suite.
+
 ## 2026-06-19
 
 - Added checked-in hostile regression tests for malformed manifest nesting,
