@@ -64,6 +64,55 @@ class MakefileRootTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("MAKEFILE_LIST must not be overridden", result.stdout)
 
+    def test_makefiles_preload_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            preload = Path(directory) / "preload.mk"
+            preload.write_text("override PYTHON := /bin/true\n", encoding="utf-8")
+            result = self.run_make(
+                "static-check",
+                environment={"MAKEFILES": str(preload)},
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("MAKEFILES must not be set", result.stdout)
+
+    def test_python_override_cannot_replace_artifact_verifier(self):
+        result = self.run_make("static-check", "PYTHON=/tmp/fake-python")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertNotIn("/tmp/fake-python", result.stdout)
+        self.assertIn("python3", result.stdout)
+
+    def test_earlier_makefile_cannot_poison_relative_trusted_makefile(self):
+        with tempfile.TemporaryDirectory(prefix="NSFar earlier make ") as directory:
+            checkout = Path(directory) / "checkout"
+            checkout.mkdir()
+            (checkout / "Makefile").write_text(
+                (ROOT / "Makefile").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            early = Path(directory) / "early.mk"
+            early.write_text("# inert\n", encoding="utf-8")
+            result = subprocess.run(
+                [
+                    "make",
+                    "--no-print-directory",
+                    "-n",
+                    "-f",
+                    str(early),
+                    "-f",
+                    "Makefile",
+                    "static-check",
+                ],
+                cwd=checkout,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                check=False,
+                env={"PATH": os.environ.get("PATH", "")},
+            )
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn(str(checkout / "scripts/check-baseline.py"), result.stdout)
+        self.assertNotIn(str(Path(directory) / "scripts/check-baseline.py"), result.stdout)
+
 
 def load_checker():
     spec = importlib.util.spec_from_file_location("nsfar_check_baseline", CHECKER_PATH)
