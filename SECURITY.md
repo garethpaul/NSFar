@@ -59,6 +59,8 @@ Helpful reports include:
   instead of being interpreted as the protected artifact's tracked mode.
 - Unreadable protected artifacts fail cleanly without traceback output so
   filesystem errors cannot suppress independent integrity findings.
+- Symbolic-link, hard-link, and path-swap aliases for `gitfiti` are rejected so
+  checksum validation remains bound to the owned checkout inode.
 - The construction history in `docs/artifact-provenance.md` narrows the
   artifact's origin but does not identify a generator or authorize a guessed
   reconstruction. Preserve the checked artifact until stronger provenance is

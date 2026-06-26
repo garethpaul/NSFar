@@ -208,6 +208,38 @@ class GitIndexProbeTests(unittest.TestCase):
 
 
 class HostileRepositoryFixtureTests(unittest.TestCase):
+    def test_symbolic_link_artifact_is_rejected(self):
+        with repository_fixture() as fixture:
+            baseline = run_checker(fixture)
+            self.assertEqual(baseline.returncode, 0, baseline.stderr)
+            artifact_path = fixture / "gitfiti"
+            external_path = fixture.parent / "external-gitfiti"
+            external_path.write_bytes(artifact_path.read_bytes())
+            artifact_path.unlink()
+            artifact_path.symlink_to(external_path)
+
+            result = run_checker(fixture)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("protected artifact must be an owned regular file", result.stderr)
+        assert_no_checker_traceback(self, result)
+
+    def test_hard_link_artifact_is_rejected(self):
+        with repository_fixture() as fixture:
+            baseline = run_checker(fixture)
+            self.assertEqual(baseline.returncode, 0, baseline.stderr)
+            artifact_path = fixture / "gitfiti"
+            external_path = fixture.parent / "external-gitfiti"
+            external_path.write_bytes(artifact_path.read_bytes())
+            artifact_path.unlink()
+            artifact_path.hardlink_to(external_path)
+
+            result = run_checker(fixture)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("protected artifact must be an owned regular file", result.stderr)
+        assert_no_checker_traceback(self, result)
+
     def test_duplicate_checkout_with_mapping_is_rejected(self):
         with repository_fixture() as fixture:
             baseline = run_checker(fixture)

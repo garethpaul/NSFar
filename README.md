@@ -99,6 +99,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   unmerged-stage probe output is rejected rather than treated as a normal file.
 - Unreadable protected artifacts fail cleanly without traceback output while
   checksum, row, manifest, and independent repository diagnostics continue.
+- The protected artifact must remain a singly linked regular file; reads use a
+  no-follow descriptor and verify path/descriptor identity before hashing.
 - Checkout validation requires one pinned checkout step, one `with` mapping,
   and exactly one `persist-credentials: false` input.
 
