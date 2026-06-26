@@ -1,5 +1,22 @@
 # Changes
 
+## 2026-06-26 15:06 PDT - P1 - Bind artifact verification to owned inode
+
+- Summary: rejected symbolic-link and hard-link aliases for `gitfiti` and bound
+  protected-byte reads to a no-follow descriptor matching the checked path.
+- Files: tightened `scripts/check-baseline.py`, expanded hostile fixtures,
+  added six ownership mutations, and documented the artifact identity boundary.
+- Tests: both alias regressions failed before implementation; Python 3.11 and
+  3.12 passed all 15 focused tests, six hostile mutations, root and external
+  `make check`, strict Git validation, unchanged artifact/manifest hashes,
+  generated-artifact checks, and secret/conflict scans.
+- Findings: exact bytes and staged mode were insufficient because path-following
+  reads accepted an external inode with the expected checksum.
+- Blockers: Codex review may remain unavailable because prior attempts return
+  HTTP 401; skip after one attempt if unchanged.
+- Next action: open the focused PR, attempt Codex review once, and merge only an
+  exact hosted-green head.
+
 ## 2026-06-21
 
 - Made absolute Makefile artifact verification safe for spaces and apostrophes

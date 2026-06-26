@@ -42,6 +42,8 @@
 - Keep the artifact manifest aligned with the checked-in artifact whenever archive metadata changes.
 - Keep artifact distinct values documented in the manifest so the observed value domain remains explicit.
 - Keep artifact boundary values documented in the manifest so sequence-edge drift remains visible.
+- Keep `gitfiti` singly linked and descriptor-bound; do not allow symbolic-link,
+  hard-link, or path-swap aliases to satisfy artifact verification.
 
 ## Agent workflow
 

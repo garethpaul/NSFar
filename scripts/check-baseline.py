@@ -2,9 +2,12 @@
 """Static baseline checks for the sparse NSFar archive."""
 
 from pathlib import Path
+import errno
 import hashlib
 import json
+import os
 import re
+import stat
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -36,6 +39,7 @@ lint build: static-check
 
 test:
 \tPYTHONDONTWRITEBYTECODE=1 $(PYTHON) "$(ROOT)/scripts/test-check-baseline.py"
+\tPYTHONDONTWRITEBYTECODE=1 $(PYTHON) "$(ROOT)/scripts/test-artifact-ownership-mutations.py"
 
 static-check:
 \tPYTHONDONTWRITEBYTECODE=1 $(PYTHON) "$(ROOT)/scripts/check-baseline.py"
@@ -63,6 +67,7 @@ GIT_PROBE_PLAN = "docs/plans/2026-06-15-git-probe-diagnostics.md"
 UNREADABLE_ARTIFACT_PLAN = "docs/plans/2026-06-15-unreadable-artifact-diagnostics.md"
 MANIFEST_VALUE_TYPE_PLAN = "docs/plans/2026-06-16-manifest-value-type-closure.md"
 MANIFEST_DUPLICATE_KEY_PLAN = "docs/plans/2026-06-17-manifest-duplicate-key-rejection.md"
+ARTIFACT_OWNERSHIP_PLAN = "docs/plans/2026-06-26-artifact-file-ownership.md"
 MANIFEST = "docs/artifact-manifest.json"
 EXPECTED_SHA256 = "89d4697d0d5d78624761159d4371a135124f4c10169e65018eb3b825afbb66d4"
 REQUIRED = [
@@ -101,9 +106,11 @@ REQUIRED = [
     UNREADABLE_ARTIFACT_PLAN,
     MANIFEST_VALUE_TYPE_PLAN,
     MANIFEST_DUPLICATE_KEY_PLAN,
+    ARTIFACT_OWNERSHIP_PLAN,
     "docs/artifact-provenance.md",
     "gitfiti",
     "scripts/check-baseline.py",
+    "scripts/test-artifact-ownership-mutations.py",
     "scripts/test-check-baseline.py",
 ]
 
@@ -117,9 +124,36 @@ def read(relative_path):
 
 def read_artifact_bytes(path):
     try:
-        return path.read_bytes(), None
+        path_stat = path.lstat()
     except OSError as error:
         return b"", f"protected artifact could not be read: {error}"
+    if not stat.S_ISREG(path_stat.st_mode) or path_stat.st_nlink != 1:
+        return b"", "protected artifact must be an owned regular file"
+
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    except OSError as error:
+        if error.errno in {errno.ELOOP, errno.ENOENT}:
+            return b"", "protected artifact must be an owned regular file"
+        return b"", f"protected artifact could not be read: {error}"
+
+    try:
+        descriptor_stat = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(descriptor_stat.st_mode)
+            or descriptor_stat.st_nlink != 1
+            or (descriptor_stat.st_dev, descriptor_stat.st_ino)
+            != (path_stat.st_dev, path_stat.st_ino)
+        ):
+            return b"", "protected artifact must be an owned regular file"
+        with os.fdopen(descriptor, "rb") as artifact_file:
+            descriptor = None
+            return artifact_file.read(), None
+    except OSError as error:
+        return b"", f"protected artifact could not be read: {error}"
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
 
 
 def parse_artifact_values(lines):
@@ -395,6 +429,21 @@ def main():
             not same_json_value({"counts": [1, 2]}, {"counts": [1, 2]})):
         failures.append("manifest value comparison must preserve exact recursive JSON types")
     checker_source = read("scripts/check-baseline.py")
+    for artifact_ownership_contract in [
+        "path." + "lstat()",
+        "stat.S_ISREG(" + "path_stat.st_mode)",
+        "path_stat.st_nlink " + "!= 1",
+        "os.O_RDONLY | os." + "O_NOFOLLOW",
+        "os." + "fstat(descriptor)",
+        "(descriptor_stat.st_dev, " + "descriptor_stat.st_ino)",
+        'with os.fdopen(descriptor, "' + 'rb") as artifact_file:',
+        "protected artifact must be an owned regular file",
+    ]:
+        if artifact_ownership_contract not in checker_source:
+            failures.append(
+                "artifact reader must preserve ownership contract: "
+                + artifact_ownership_contract
+            )
     for required_missing_file_contract in [
         'except OSError:\n        return ""',
         "if artifact_path.is_" + "file():",
@@ -797,6 +846,47 @@ def main():
         )
     ):
         failures.append("manifest duplicate-key rejection plan must record completed verification")
+    artifact_ownership_plan = read(ARTIFACT_OWNERSHIP_PLAN)
+    artifact_ownership_verification = markdown_section(
+        artifact_ownership_plan, "Verification Completed"
+    )
+    if (
+        artifact_ownership_plan.count("status: completed") != 1
+        or not artifact_ownership_verification
+        or re.search(
+            r"(?i)\b(?:pending|todo|tbd|not run|to be recorded)\b",
+            artifact_ownership_verification,
+        )
+    ):
+        failures.append("artifact ownership plan must record completed verification")
+    for evidence in [
+        "15 focused tests",
+        "six isolated hostile mutations",
+        "make check",
+        "external working directory",
+    ]:
+        if evidence not in artifact_ownership_verification:
+            failures.append(f"artifact ownership verification must record {evidence}")
+
+    ownership_tests = read("scripts/test-check-baseline.py")
+    for test_name in [
+        "test_symbolic_link_artifact_is_rejected",
+        "test_hard_link_artifact_is_rejected",
+    ]:
+        if test_name not in ownership_tests:
+            failures.append(f"artifact ownership tests must retain {test_name}")
+
+    ownership_mutations = read("scripts/test-artifact-ownership-mutations.py")
+    for mutation_name in [
+        '"path-lstat"',
+        '"read-no-follow"',
+        '"single-link-check"',
+        '"descriptor-identity"',
+        '"regression-test"',
+        '"completed-plan"',
+    ]:
+        if mutation_name not in ownership_mutations:
+            failures.append(f"artifact ownership mutations must retain {mutation_name}")
     workflow_files, workflow_inventory_error = read_workflow_files()
     if workflow_inventory_error:
         failures.append(workflow_inventory_error)

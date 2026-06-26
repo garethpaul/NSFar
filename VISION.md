@@ -34,6 +34,7 @@ The current focus is:
 Priority:
 
 - Keep the existing artifact intact
+- Keep the protected artifact bound to one owned regular-file inode during reads
 - Document provenance before making functional changes
 - Avoid adding generated churn without explaining the source
 - Preserve the security-reporting path
